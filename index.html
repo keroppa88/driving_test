@@ -1949,8 +1949,8 @@ function animate(){
     hudSpeedEl.textContent=Math.round(cruiseSpeed/MAX_CRUISE*120);
   }
 
-  // Vehicle XY position on the map plane (Y = world Z).
-  coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Y '+(camera.position.z).toFixed(1);
+  // Vehicle position on the map plane: X = left/right (right +), Z = near/far (奥 −).
+  coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Z '+camera.position.z.toFixed(1);
 
   renderer.render(scene,camera);
 }
