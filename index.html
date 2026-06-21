@@ -1896,7 +1896,7 @@ function updateMovement(dt){
   }
 
   // X-axis movement is no longer clamped — the player can move freely on X.
-  if(camera.position.z<=PLAY_Z_MIN){camera.position.z+=LOOP_LENGTH;handleLoopTransition();}
+  // Z-loop warp removed: the player no longer teleports back at PLAY_Z_MIN.
 
   // Rock shake
   const now2=performance.now(), dt2=Math.min((now2-shakeT0)/1000,.05); shakeT0=now2;
