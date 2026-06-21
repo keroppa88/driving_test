@@ -1322,16 +1322,37 @@ const COURSE_Y    = 0.0;           // height of the road surface
 const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
 const TILE_SRC = 2139194.5;
-// [ source tile, gridCol, gridRow, yRotation ]
-// Front-left corner anchored at (col*CELL, row*CELL); the cell extends +X
-// (right) and −Z (奥/away). Tiles are placed AS-IS (no auto rotation). The
-// near edge (下辺/手前) faces +Z, the far edge (上辺/奥) faces −Z, so the
-// column stacks toward −Z: 01 → 00 → 01.
-const COURSE_LAYOUT = [
-  ['map01.gltf', 0,  0, R0],   // 下辺(手前) at (0,0); spans z[-40,0]
-  ['map00.gltf', 0, -1, R0],   // spans z[-80,-40]
-  ['map01.gltf', 0, -2, R0],   // spans z[-120,-80]
-];
+// ─── H・TS・OU記法 (grid layout notation) ──────────────────────────────────
+//   H  = 俯瞰     : written exactly as seen from straight above (−Z up, +X right)
+//   TS = 手前=画面下 : the BOTTOM line; its left tile's front-left corner = (0,0,0)
+//   OU = 奥=画面上   : the TOP line; farthest in −Z (top of screen)
+// Grid text: each LINE is a row (top=奥/−Z, bottom=手前), comma-separated CELLS
+// are columns (left→right = +X). Each cell is "mapNN=deg"; an empty cell (blank
+// between commas) means no tile. deg = CLOCKWISE (right) degrees (90=right90°,
+// 270=left90°, 0=as-authored).
+const COURSE_MAP = `
+map01=0,  map00=90, map01=90
+map00=0,  ,         map00=0
+map01=270,map00=90, map01=180
+`;
+const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
+
+// Parse the grid text into tiles with grid coords. Bottom line → row 0 (手前,
+// z near 0); higher lines → more negative rows (奥). Left column → col 0 (x=0).
+function parseCourseMap(text){
+  const lines = text.split('\n').map(l=>l.replace(/\s+/g,'')).filter(l=>l.length>0);
+  const n = lines.length;
+  const tiles = [];
+  lines.forEach((line,r)=>{
+    line.split(',').forEach((cell,c)=>{
+      const m = cell.match(/^map(\d+)=(-?\d+)$/);
+      if(!m) return;                                  // empty / invalid cell
+      tiles.push({ file:`map${m[1]}.gltf`, col:c, row:r-(n-1), deg:parseInt(m[2],10) });
+    });
+  });
+  return tiles;
+}
+const COURSE_TILES = parseCourseMap(COURSE_MAP);
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
 // exactly one COURSE_CELL square. The source geometry already lies flat in
@@ -1359,29 +1380,29 @@ function makeCourseTile(src, yRot){
 // Tiles are corner-anchored at (col*CELL, row*CELL); no extra offset.
 const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
-// Centre of the stacked column (for start position and top-down view).
-const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
-const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
-// Vehicle start: on the middle (00) tile.
+// Centre of the whole course (for start position and top-down view), from the grid.
+const _cCols = COURSE_TILES.map(t=>t.col), _cRows = COURSE_TILES.map(t=>t.row);
+const COURSE_CENTER_X = ((Math.min(..._cCols)+Math.max(..._cCols))/2)*COURSE_CELL + COURSE_CELL/2;
+const COURSE_CENTER_Z = ((Math.min(..._cRows)+Math.max(..._cRows))/2)*COURSE_CELL - COURSE_CELL/2;
 const START_X = COURSE_CENTER_X;
-const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
+const START_Z = COURSE_CENTER_Z;
 
 function buildLoopCourse(){
   const sources = {};
   const loader = new GLTFLoader();
-  const files = ['map00.gltf','map01.gltf'];
+  const files = [...new Set(COURSE_TILES.map(t=>t.file))];
   Promise.all(files.map(f=>new Promise(res=>{
     loader.load(f+'?v='+Date.now(), g=>{ sources[f]=g.scene; res(); },
       null, e=>{ console.error(f,e); res(); });
   }))).then(()=>{
     const course = new THREE.Group();
     course.name = 'loopCourse';
-    for(const [file,col,row,yRot] of COURSE_LAYOUT){
+    for(const {file,col,row,deg} of COURSE_TILES){
       const src = sources[file];
       if(!src) continue;
-      const tile = makeCourseTile(src, yRot);
-      // Place at the CELL CENTRE so the (unrotated) bottom-left corner lands on
-      // the grid point (col*CELL, row*CELL); the cell spans +X and +Z from there.
+      const tile = makeCourseTile(src, deg2yrot(deg));
+      // Place at the CELL CENTRE so the (unrotated) front-left corner lands on
+      // the grid point (col*CELL, row*CELL); the cell spans +X and −Z from there.
       tile.position.set(col*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X, COURSE_Y,
                         row*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z);
       course.add(tile);
@@ -1841,7 +1862,7 @@ function getEffectiveYaw(){ return yaw; }
 // Top-down overview of the whole course (toggle with the V key) — lets you
 // verify the tile layout from above, like a map.
 let topView=false, _savedFogDensity=null;
-const TOPVIEW_HEIGHT=160;
+const TOPVIEW_HEIGHT=220;
 function updateMovement(dt){
   if(!gameActive) return;
 
