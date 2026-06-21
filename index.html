@@ -1303,6 +1303,80 @@ function loadSpecialModel(file,px,py,pz){
   });
 }
 
+// ─────────────────────────────────────────────
+//  LOOP COURSE (map00.gltf + map01.gltf)
+//  00 = straight road (bottom-centre ↔ top-centre)
+//  01 = corner road   (bottom-centre ↔ right-centre)
+//  Eight tiles are arranged in a 3×3 ring (centre empty) so the
+//  road forms one continuous, closed lap:
+//
+//    01(L90) 00(L90) 01(180)        (col0,r-1)(col1,r-1)(col2,r-1)
+//    00       ----    01(180)        (col0, r0)         (col2, r0)
+//    01       00(R90) 01(R90)        (col0, r1)(col1,r1)(col2,r1)
+// ─────────────────────────────────────────────
+const COURSE_CELL = 40;            // world size of one tile (square)
+const COURSE_Y    = 0.0;           // height of the road surface
+// Y-rotation about the vertical axis: in three.js +π/2 turns North(+Z)→East(+X)
+// (a "right"/clockwise turn seen from above), −π/2 turns North→West ("left").
+const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
+// [ source tile, gridCol, gridRow, yRotation ]
+const COURSE_LAYOUT = [
+  ['map00.gltf', 0,  0, R0  ],   // P0  start            (00, 0°)
+  ['map01.gltf', 0,  1, R0  ],   // P1  above P0         (01, 0°)
+  ['map00.gltf', 1,  1, R90 ],   // P2  right of P1      (00, right 90°)
+  ['map01.gltf', 2,  1, R90 ],   // P3  right of P2      (01, right 90°)
+  ['map00.gltf', 2,  0, R180],   // P4  below P3         (00, 180°)
+  ['map01.gltf', 2, -1, R180],   // P5  below P4         (01, 180°)
+  ['map00.gltf', 1, -1, RL90],   // P6  left of P5       (00, left 90°)
+  ['map01.gltf', 0, -1, RL90],   // P7  left of P6 → P0  (01, left 90°)
+];
+
+// Normalise a loaded tile so it lies flat on the ground (XZ plane), is
+// centred on its own origin and fills exactly one COURSE_CELL square.
+function makeCourseTile(src, yRot){
+  const obj = src.clone(true);
+  obj.traverse(c=>{ if(!c.isMesh) return; c.frustumCulled=false;
+    const fix=mat=>{ if(!mat) return; mat.transparent=false; mat.opacity=1;
+      mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true; };
+    Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
+  });
+  obj.updateMatrixWorld(true);
+  const box  = new THREE.Box3().setFromObject(obj);
+  const cen  = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  obj.position.sub(cen);                          // centre tile on origin (tile space)
+  const flat = new THREE.Group();                 // lay flat: tile +Y(north) → world +Z
+  flat.add(obj);
+  flat.rotation.x = -Math.PI/2;
+  flat.scale.setScalar(COURSE_CELL / Math.max(size.x, size.y));
+  const pivot = new THREE.Group();                // course rotation about world Y
+  pivot.add(flat);
+  pivot.rotation.y = yRot;
+  return pivot;
+}
+
+function buildLoopCourse(){
+  const sources = {};
+  const loader = new GLTFLoader();
+  const files = ['map00.gltf','map01.gltf'];
+  Promise.all(files.map(f=>new Promise(res=>{
+    loader.load(f+'?v='+Date.now(), g=>{ sources[f]=g.scene; res(); },
+      null, e=>{ console.error(f,e); res(); });
+  }))).then(()=>{
+    const course = new THREE.Group();
+    course.name = 'loopCourse';
+    for(const [file,col,row,yRot] of COURSE_LAYOUT){
+      const src = sources[file];
+      if(!src) continue;
+      const tile = makeCourseTile(src, yRot);
+      tile.position.set(col*COURSE_CELL, COURSE_Y, row*COURSE_CELL);
+      course.add(tile);
+    }
+    scene.add(course);
+  });
+}
+buildLoopCourse();
+
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
