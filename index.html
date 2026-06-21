@@ -1327,9 +1327,9 @@ const TILE_SRC = 2139194.5;
 // Stack upward (−Z): 01 corner at (0,0) → its top edge (z=-CELL) meets 00's
 // bottom edge → 00's top edge meets the next 01's bottom edge.
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0,  0, R0  ],   // corner at (0,0),   spans z[-40,  0]
+  ['map01.gltf', 0,  0, RL90],   // corner at (0,0),   spans z[-40,  0] — bottom 01 (screen bottom), left 90°
   ['map00.gltf', 0, -1, R0  ],   // corner at (0,-40), spans z[-80,-40]
-  ['map01.gltf', 0, -2, RL90],   // corner at (0,-80), spans z[-120,-80] — bottom 01, left 90°
+  ['map01.gltf', 0, -2, R0  ],   // corner at (0,-80), spans z[-120,-80]
 ];
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
