@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Driving in the USA</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; background:#111; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
+
+#gameboy {
+  width:  min(100vw, calc(100dvh * 0.565));
+  height: min(100dvh, calc(100vw / 0.565));
+  background: linear-gradient(160deg, #d4cfb8 0%, #c4bfa8 60%, #b8b39e 100%);
+  border-radius: 22px;
+  box-shadow: inset 2px 3px 10px rgba(255,255,255,.55), inset -2px -3px 8px rgba(0,0,0,.25), 6px 10px 28px rgba(0,0,0,.65);
+  display: flex; flex-direction: column;
+  padding: 14px 14px 18px; gap: 10px;
+  position: relative; overflow:hidden;
+}
+#gameboy::after {
+  content:''; position:absolute; inset:0; border-radius:22px; pointer-events:none; z-index:9999;
+  background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='250'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='250' height='250' filter='url(%23n)'/></svg>");
+  opacity:0.07; mix-blend-mode:overlay;
+}
+
+#screen-wrapper {
+  flex: 0 0 54%;
+  background: #1e1e1e;
+  border-radius: 14px;
+  padding: 7px;
+  box-shadow: inset 4px 4px 14px rgba(0,0,0,.85), inset -1px -1px 4px rgba(255,255,255,.08);
+  position: relative; overflow: hidden;
+  cursor: crosshair; touch-action: none;
+}
+#screen-wrapper::before {
+  content:''; position:absolute; inset:5px; border-radius:9px; background:#0d1a0d; z-index:0;
+}
+#gameCanvas {
+  width:100%; height:100%; display:block; border-radius:9px; position:relative; z-index:1;
+  filter: sepia(.1) saturate(.9) brightness(.95);
+}
+#crosshair {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:rgba(190,215,190,.6); font-size:18px; font-weight:100; pointer-events:none; z-index:6;
+  text-shadow:0 0 8px rgba(80,200,80,.3); line-height:1;
+}
+
+#hud {
+  position:absolute; top:9px; left:11px; right:11px;
+  display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px;
+  z-index:10; pointer-events:none;
+  font-size:clamp(14px,3.6vw,20px);
+  color:rgba(185,215,185,.92); text-shadow:0 0 6px rgba(0,220,0,.35); letter-spacing:.04em;
+  line-height:1.1;
+}
+#track-bar {
+  position:absolute; bottom:7px; left:9px; right:9px;
+  z-index:10; pointer-events:none;
+  font-size:clamp(16px,4.3vw,24px);
+  color:rgba(170,210,170,.85); text-shadow:0 0 5px rgba(0,200,0,.3);
+  white-space:normal; word-break:break-word;
+  text-align:center; line-height:1.2;
+}
+#dpad-center-dot { color:#555; }
+#dpad-center.pl-active #dpad-center-dot { color:#ff2020; text-shadow:0 0 8px #ff0000,0 0 16px #ff0000; }
+.pl-name-small { font-size:0.7em; }
+
+#loading-screen, #start-overlay, #sound-panel {
+  position:absolute; inset:0; z-index:20; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  border-radius:9px; padding:12px;
+}
+#loading-screen { background:rgba(10,20,10,.95); color:#8dc88d; font-size:clamp(9px,2.5vw,13px); gap:8px; }
+#start-overlay  { background:rgba(8,15,8,.92); color:#aadaaa; justify-content:space-between; }
+#start-overlay h1 { font-size:21px; color:#c8e8c8; letter-spacing:.05em; text-align:center; margin-bottom:2px; white-space:nowrap; }
+#overlay-top { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:22%; }
+#overlay-main { display:flex; flex-direction:column; align-items:center; gap:30px; }
+#overlay-bottom { display:flex; justify-content:flex-end; width:100%; }
+#start-overlay .ctrl-hint { font-size:clamp(6px,1.6vw,8.5px); color:#669966; text-align:center; line-height:1.6; }
+
+.vol-row-sm { display:flex; align-items:center; gap:6px; width:100%; }
+.vol-row-sm label { font-size:clamp(6px,1.5vw,8px); color:#88aa88; min-width:4em; text-align:right; }
+.vol-row-sm input[type=range] { flex:1; accent-color:#6a8; height:14px; cursor:pointer; }
+.vol-row-sm span { font-size:clamp(6px,1.5vw,8px); color:#99bb99; min-width:2.5em; }
+
+#audio-load-msg { font-size:clamp(12px,3vw,16px); color:#557755; text-align:center; }
+#start-btn {
+  margin-top:4px; padding:6px 18px;
+  background:transparent; color:#aaddaa; border:1px solid #446644;
+  font-family:inherit; font-size:clamp(18px,4.6vw,26px); cursor:pointer; letter-spacing:.05em;
+  border-radius:4px;
+}
+#start-btn:disabled { opacity:.4; cursor:default; }
+#start-btn:not(:disabled):active { background:rgba(100,180,100,.15); }
+
+#usa-btn {
+  display:block; padding:3px 10px; text-decoration:none;
+  background:transparent; color:#88bb88; border:1px solid #335533;
+  font-family:inherit; font-size:12px; cursor:pointer; letter-spacing:.03em; white-space:nowrap;
+  border-radius:4px;
+}
+#usa-btn:active { background:rgba(100,180,100,.15); }
+#explain-btn {
+  padding:4px 14px;
+  background:transparent; color:#88bb88; border:1px solid #335533;
+  font-family:inherit; font-size:clamp(16px,4.1vw,23px); cursor:pointer; letter-spacing:.05em;
+  border-radius:4px;
+}
+#explain-btn:active { background:rgba(80,160,80,.15); }
+
+#explain-panel { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; background:#090f09; gap:10px; padding:12px; }
+#explain-content { flex:1; overflow-y:auto; overflow-x:hidden; width:100%; display:flex; flex-direction:column; gap:12px; align-items:center; touch-action:pan-y; -webkit-overflow-scrolling:touch; }
+#explain-content img { width:100%; max-width:640px; display:block; border-radius:4px; }
+
+#explain-back-btn {
+  flex-shrink:0; padding:5px 20px;
+  background:transparent; color:#aaddaa; border:1px solid #446644;
+  font-family:inherit; font-size:clamp(14px,3.6vw,20px); cursor:pointer; letter-spacing:.05em;
+  border-radius:4px;
+}
+#explain-back-btn:active { background:rgba(100,180,100,.15); }
+
+#lightbox {
+  position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,.97);
+  overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y;
+  cursor:zoom-out; display:flex; align-items:flex-start; justify-content:flex-start;
+}
+#lightbox img { display:block; width:auto; height:auto; min-width:100%; }
+
+#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; touch-action:auto; }
+#sound-panel h2 { font-size:clamp(16px,4vw,22px); color:#99cc99; }
+.vol-block { width:100%; display:flex; flex-direction:column; gap:6px; }
+.vol-block label { font-size:clamp(18px,4.5vw,24px); color:#88aa88; }
+.vol-block-slider { display:flex; align-items:center; gap:8px; width:100%; }
+.vol-block-slider span { font-size:clamp(10px,2.5vw,14px); color:#99bb99; min-width:2.8em; }
+
+#connecting-bar {
+  position:absolute; top:25%; left:9px; right:9px;
+  z-index:10; pointer-events:none;
+  font-size:clamp(24px,6vw,34px);
+  font-weight:bold;
+  color:rgba(155,200,155,.9);
+  text-align:center; display:none;
+  white-space:normal; word-break:break-word; line-height:1.2;
+}
+
+#controls { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
+#controls-mid { flex:3; min-height:0; display:flex; align-items:stretch; gap:20px; overflow:hidden; }
+
+#dpad-housing {
+  align-self:flex-end; height:81%; aspect-ratio:1; flex-shrink:0; max-width:210px;
+  background:none; border:none; padding:0; box-shadow:none; border-radius:0;
+}
+#dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
+.dpad-btn {
+  background:linear-gradient(145deg,#2a2a2a,#111); border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .08s, box-shadow .08s;
+  box-shadow:1px 1px 3px rgba(0,0,0,.5), -1px -1px 2px rgba(255,255,255,.08);
+}
+.dpad-btn.pressed, .dpad-btn:active { background:linear-gradient(145deg,#111,#2a2a2a); box-shadow:inset 2px 2px 5px rgba(0,0,0,.7); }
+.dpad-arrow { color:#888; font-size:clamp(11px,3.5vw,18px); pointer-events:none; }
+
+#dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
+#dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
+#dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
+#dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
+#dpad-down   { grid-area:3/2; border-radius:2px 2px 5px 5px; }
+#dpad-corner-tl { grid-area:1/1; background:transparent!important; box-shadow:none!important; }
+#dpad-corner-tr { grid-area:1/3; background:transparent!important; box-shadow:none!important; }
+#dpad-corner-bl { grid-area:3/1; background:transparent!important; box-shadow:none!important; }
+#dpad-corner-br { grid-area:3/3; background:transparent!important; box-shadow:none!important; }
+
+#sliders-area { flex:1; align-self:flex-end; display:flex; flex-direction:column; justify-content:space-between; gap:3px; padding-left:8%; padding-right:5%; }
+#color-sliders-row { display:flex; flex-direction:row; align-items:stretch; gap:5px; }
+#slider-container {
+  flex:1;
+  background:linear-gradient(160deg,#a8a48e,#989080);
+  border-radius:12px; padding:2px 8px 2px;
+  box-shadow:inset 4px 4px 9px rgba(0,0,0,.38), inset -1px -1px 3px rgba(255,255,255,.22);
+  display:flex; flex-direction:column; justify-content:space-evenly; gap:0;
+}
+.slider-col { display:flex; flex-direction:column; flex:1; justify-content:center; }
+.slider-inline { display:flex; align-items:center; gap:4px; }
+.slider-inline input[type=range] { flex:1; }
+.color-side-label { font-size:clamp(10px,2.5vw,14px); font-weight:bold; color:#2a2818; white-space:nowrap; }
+#sky-btns-col { display:flex; flex-direction:column; gap:4px; width:clamp(28px,9vw,40px); flex-shrink:0; align-items:center; justify-content:space-around; }
+#sky-btns-col .toggle-btn { width:100%; height:auto; aspect-ratio:1; border-radius:50%; }
+.tick-row { height:8px; padding:0 2px; margin-bottom:6px; background:repeating-linear-gradient(to right,#888 0px,#888 1px,transparent 1px,transparent 7px); background-size:calc(100%/13) 100%; }
+#slider-container .tick-row { height:2px; margin-bottom:0; }
+#speed-row { display:flex; flex-direction:row; align-items:center; gap:5px; }
+#speed-slider-wrap { flex:1; }
+.speed-side-label { width:clamp(28px,9vw,40px); flex-shrink:0; text-align:center; font-size:clamp(11px,2.8vw,15px); font-weight:bold; color:#2a2818; }
+
+input[type=range] { width:100%; height:56px; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:5px; background:linear-gradient(to right,#666,#888); border-radius:3px; box-shadow:inset 2px 2px 5px rgba(0,0,0,.6); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:9px; height:26px;
+  background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px);
+  border-radius:3px; margin-top:-11px;
+  box-shadow:2px 2px 6px rgba(0,0,0,.7), -1px -1px 2px rgba(255,255,255,.15);
+}
+input[type=range]::-moz-range-track { height:5px; background:#777; border-radius:3px; }
+input[type=range]::-moz-range-thumb { width:9px; height:26px; background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px); border-radius:3px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.7); }
+#slider-container input[type=range] { height:18px; }
+#slider-container input[type=range]::-webkit-slider-thumb { width:9px; height:18px; margin-top:-7px; }
+#slider-container input[type=range]::-moz-range-thumb { width:9px; height:18px; }
+#speed-row input[type=range] { height:33px; }
+#speed-row input[type=range]::-webkit-slider-thumb { width:11px; height:24px; margin-top:-10px; }
+#speed-row input[type=range]::-moz-range-thumb { width:11px; height:24px; }
+
+.slider-label { text-align:center; font-size:clamp(13px,3.2vw,16px); color:#1a1810; letter-spacing:.05em; margin-top:4px; }
+#slider-container .slider-label { font-size:clamp(12px,3vw,16px); margin-top:2px; color:#2a2818; font-weight:bold; }
+#speed-row .slider-label { font-size:clamp(9px,2.3vw,12px); margin-top:1px; color:#2a2818; }
+
+.toggle-btn {
+  width:100%; height:clamp(28px,8.5vw,38px); border:none; border-radius:6px;
+  background:#0d0d0d;
+  box-shadow:inset 1px 1px 4px rgba(0,0,0,.95), 2px 2px 5px rgba(0,0,0,.55);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:color .15s; color:#6aba6a;
+}
+.toggle-btn svg { width:55%; height:55%; }
+.toggle-btn:active { box-shadow:inset 3px 3px 8px rgba(0,0,0,.95); transform:scale(.96); }
+.toggle-btn.active { color:#ddd6a8; }
+.toggle-label { font-size:clamp(7px,1.9vw,10px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
+.sky-switch {
+  position:relative; display:flex; align-items:center; overflow:hidden;
+  width:100%; height:clamp(28px,8.5vw,38px);
+  background:#2d5a2d; border-radius:99px;
+  box-shadow:inset 2px 2px 5px rgba(0,0,0,.6), inset -1px -1px 3px rgba(255,255,255,.1);
+  cursor:pointer; transition:background .2s;
+}
+.sky-switch.on { background:#3a7a3a; }
+.sky-knob {
+  position:absolute; top:3px; bottom:3px; left:3px;
+  width:calc(50% - 4px);
+  background:#cc2222; border-radius:99px;
+  box-shadow:1px 1px 4px rgba(0,0,0,.7);
+  transition:transform .2s; pointer-events:none; z-index:1;
+}
+.sky-switch.on .sky-knob { transform:translateX(calc(100% + 2px)); }
+.sky-sw-label {
+  position:relative; z-index:2; flex:1; text-align:center;
+  font-size:clamp(10px,2.8vw,14px); font-weight:bold; color:#fff;
+  pointer-events:none; line-height:1;
+}
+
+#buttons-row { flex:0.7; display:flex; justify-content:space-evenly; align-items:center; padding:0 2px; }
+.action-btn-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.action-btn {
+  width:clamp(38px,12.5vw,54px); height:clamp(38px,12.5vw,54px); border-radius:50%; border:none;
+  background:linear-gradient(145deg,#2e2e2e,#111);
+  box-shadow:3px 3px 8px rgba(0,0,0,.55), -1px -1px 3px rgba(255,255,255,.12), inset 1px 1px 2px rgba(255,255,255,.08);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .1s; color:#888;
+}
+.action-btn:active { box-shadow:inset 2px 2px 7px rgba(0,0,0,.7); transform:scale(.94); }
+.action-btn.active { color:#6aba6a; }
+.action-btn svg { width:44%; height:44%; }
+.btn-label { font-size:clamp(13px,3.5vw,20px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
+
+body.screen-only #gameboy { width:100vw; height:100dvh; padding:0; border-radius:0; box-shadow:none; background:#000; gap:0; }
+body.screen-only #gameboy::after { display:none; }
+body.screen-only #screen-wrapper { flex:1 1 100%; border-radius:0; box-shadow:none; cursor:pointer; }
+body.screen-only #controls { display:none; }
+body.screen-only #buttons-row { display:none; }
+body.screen-only #screen-wrapper::before { display:none; }
+</style>
+</head>
+<body>
+
+<div id="gameboy">
+  <div id="screen-wrapper">
+    <div id="loading-screen">
+      <div>ロード中...</div>
+      <div id="load-progress"></div>
+    </div>
+
+    <div id="start-overlay" style="display:none">
+      <div id="overlay-top">
+        <h1>Driving in the USA</h1>
+        <div id="audio-load-msg">読み込み中・・・</div>
+      </div>
+      <div id="overlay-main">
+        <button id="start-btn" disabled>DRIVE START</button>
+        <button id="explain-btn">説明</button>
+      </div>
+      <div id="overlay-bottom">
+        <a id="usa-btn" href="https://keroppa88.github.io/driving_tokyo_s/" target="_blank" rel="noopener">Driving in Tokyo</a>
+      </div>
+    </div>
+
+    <div id="sound-panel">
+      <h2>── 音量設定 ──</h2>
+      <div class="vol-block">
+        <label>エンジン</label>
+        <div class="vol-block-slider">
+          <input type="range" id="engine-vol2" min="0" max="100" value="70">
+          <span id="engine-vol2-lbl">70%</span>
+        </div>
+      </div>
+      <div class="vol-block">
+        <label>Music</label>
+        <div class="vol-block-slider">
+          <input type="range" id="yt-vol2" min="0" max="100" value="70">
+          <span id="yt-vol2-lbl">70%</span>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="crosshair">+</div>
+    <div id="hud">
+      <span><span id="hud-speed">0</span>km/h</span>
+      <span id="hud-auto" style="display:none;color:#6aba6a;">AUTO</span>
+    </div>
+    <div id="track-bar"></div>
+    <div id="connecting-bar"></div>
+  </div>
+
+  <div id="controls">
+    <div id="controls-mid">
+      <div id="dpad-housing">
+        <div id="dpad">
+          <div id="dpad-corner-tl"></div>
+          <div id="dpad-up" class="dpad-btn" data-dir="up"><span class="dpad-arrow">▲</span></div>
+          <div id="dpad-corner-tr"></div>
+          <div id="dpad-left" class="dpad-btn" data-dir="left"><span class="dpad-arrow">◀</span></div>
+          <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" id="dpad-center-dot">●</span></div>
+          <div id="dpad-right" class="dpad-btn" data-dir="right"><span class="dpad-arrow">▶</span></div>
+          <div id="dpad-corner-bl"></div>
+          <div id="dpad-down" class="dpad-btn" data-dir="down"><span class="dpad-arrow">▼</span></div>
+          <div id="dpad-corner-br"></div>
+        </div>
+      </div>
+
+      <div id="sliders-area">
+        <div id="color-sliders-row">
+          <div id="slider-container">
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
+                <input type="range" id="sky-color-slider" min="0" max="100" value="59">
+                <span class="color-side-label">色調</span>
+              </div>
+            </div>
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
+                <input type="range" id="sky-sat-slider" min="0" max="100" value="63">
+                <span class="color-side-label">彩度</span>
+              </div>
+            </div>
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
+                <input type="range" id="sky-bright-slider" min="0" max="100" value="89">
+                <span class="color-side-label">明暗</span>
+              </div>
+            </div>
+          </div>
+          <div id="sky-btns-col">
+            <button class="toggle-btn" id="btn-star">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
+              </svg>
+            </button>
+            <button class="toggle-btn" id="btn-rain">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 12a11.05 11.05 0 0 0-22 0z"/>
+                <path d="M12 12v5.5a2.5 2.5 0 0 1-5 0"/>
+                <line x1="7" y1="17" x2="6.5" y2="20"/>
+                <line x1="17" y1="17" x2="16.5" y2="20"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="speed-row">
+          <div id="speed-slider-wrap">
+            <input type="range" id="speed-slider" min="0" max="100" value="0">
+          </div>
+          <span class="speed-side-label">速度</span>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="buttons-row">
+      <div class="action-btn-wrap">
+        <span class="btn-label" id="lbl-play">再生</span>
+        <button class="action-btn active" id="btn-play">
+          <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-btn-wrap">
+        <span class="btn-label" id="lbl-hud">非表示</span>
+        <button class="action-btn active" id="btn-hud">
+          <svg id="hud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M3 3l18 18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-btn-wrap">
+        <span class="btn-label">自動運転</span>
+        <button class="action-btn" id="btn-auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="7" rx="2"/>
+            <path d="M5 11l2-5h10l2 5"/>
+            <circle cx="7.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="16.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-btn-wrap">
+        <span class="btn-label">音量</span>
+        <button class="action-btn active" id="btn-sound">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+            <path d="M16.5 12A4.5 4.5 0 0014 7.97v8.06c1.48-.73 2.5-2.25 2.5-4.03z" opacity=".7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-btn-wrap">
+        <span class="btn-label" id="lbl-color">上空色</span>
+        <button class="action-btn active" id="btn-fs">
+          <svg id="fs-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="explain-panel" style="display:none">
+  <div id="explain-content">
+    <img src="cm01.png" alt="説明1">
+    <img src="cm02.png" alt="説明2">
+  </div>
+  <button id="explain-back-btn">戻る</button>
+</div>
+
+<div id="lightbox" style="display:none">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div style="position:fixed;top:-400px;left:-400px;width:400px;height:300px;pointer-events:none">
+  <div id="yt-container"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// ─────────────────────────────────────────────
+//  DOM REFS
+// ─────────────────────────────────────────────
+const canvas       = document.getElementById('gameCanvas');
+const wrapper      = document.getElementById('screen-wrapper');
+const loadingEl    = document.getElementById('loading-screen');
+const loadProgEl   = document.getElementById('load-progress');
+const startOverlay = document.getElementById('start-overlay');
+const connectBar   = document.getElementById('connecting-bar');
+const trackBarEl   = document.getElementById('track-bar');
+const hudEl        = document.getElementById('hud');
+const hudSpeedEl   = document.getElementById('hud-speed');
+const hudAutoEl    = document.getElementById('hud-auto');
+const soundPanel   = document.getElementById('sound-panel');
+
+// ─────────────────────────────────────────────
+//  CONSTANTS (USA)
+// ─────────────────────────────────────────────
+const EYE_HEIGHT   = 0.27;
+const MAX_CRUISE   = 22;
+const PLAYER_R     = 0.3;
+const PLAY_X_MIN   = -21.1, PLAY_X_MAX = 21.1;
+const PLAY_Z_MIN   = -233,  PLAY_Z_MAX = 1;
+const LOOP_LENGTH  = 234;
+const AP_TARGET_X  = 1.17;
+const ONCOMING_X   =  1.17;
+const SAMEDIR_X    = -1.17;
+const CAR_SPEED    = MAX_CRUISE / 2;
+const CYCLE_DURATION_MS   = 35 * 60 * 1000;
+const SPAWN_WINDOW_MS     = 30000;
+const SAMEDIR_LIFETIME_MS = 180000;
+const CAR_SPAWN_OFFSET_ABS = 100;
+const SAMEDIR_EXIT_DIST    = CAR_SPAWN_OFFSET_ABS + LOOP_LENGTH / 2;
+
+// ─────────────────────────────────────────────
+//  RENDERER
+// ─────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+function onResize() {
+  const W = wrapper.clientWidth, H = wrapper.clientHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+
+// ─────────────────────────────────────────────
+//  SCENE
+// ─────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = null;
+// Fog colour = desert brown (NOT the sky colour) so distant ground stays brown
+// and meets the sky as a crisp horizon instead of hazing into it.
+const GROUND_FOG_COLOR = new THREE.Color(0x8a7048);
+scene.fog = new THREE.FogExp2(GROUND_FOG_COLOR.getHex(), 0.0075);
+
+// Sky gradient shader
+const skyUniforms = {
+  topColor:         { value: new THREE.Color(0x4a6fa0) },
+  horizonColor:     { value: new THREE.Color(0xc8daf0) },
+  horizonBandColor: { value: new THREE.Color(0xc8daf0) },
+};
+const skyMat = new THREE.ShaderMaterial({
+  uniforms: skyUniforms,
+  vertexShader:   `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `uniform vec3 topColor,horizonColor,horizonBandColor; varying vec3 vPos;
+    void main(){ float h=clamp(normalize(vPos).y,0.0,1.0); float b=smoothstep(0.0,0.18,h);
+      vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.85)),1.0); }`,
+  side: THREE.BackSide, depthWrite: false, depthTest: false,
+});
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
+skyMesh.renderOrder = -1; skyMesh.frustumCulled = false;
+scene.add(skyMesh);
+
+let skyTopTarget       = new THREE.Color(0x4a6fa0);
+let skyHorizTarget     = new THREE.Color(0xc8daf0);
+let skyHorizBandTarget = new THREE.Color(0xc8daf0);
+let skyIsBlack = false;
+
+let skyH = 0.592, skyS = 0.63, skyL = 0.88;
+let horizH = 0.583, horizS = 0.24, horizL = 0.79;
+let skySliderMode = 0; // 0=空, 1=地平線
+
+function applySkySliders() {
+  if (skySliderMode === 0) {
+    skyTopTarget.setHSL(skyH, skyS, skyL);
+  } else {
+    skyHorizTarget = new THREE.Color().setHSL(horizH, horizS, horizL);
+    skyHorizBandTarget.copy(skyHorizTarget);
+  }
+  skyIsBlack = false;
+}
+
+function syncSkySliders() {
+  const colorEl = document.getElementById('sky-color-slider');
+  const satEl = document.getElementById('sky-sat-slider');
+  const brightEl = document.getElementById('sky-bright-slider');
+  if (!colorEl || !satEl || !brightEl) return;
+  if (skySliderMode === 0) {
+    colorEl.value = Math.round(skyH * 100);
+    satEl.value = Math.round(skyS * 100);
+    brightEl.value = Math.round(Math.max(0, Math.min(100, (skyL - 0.1) / 0.88 * 100)));
+  } else {
+    colorEl.value = Math.round(horizH * 100);
+    satEl.value = Math.round(horizS * 100);
+    brightEl.value = Math.round(Math.max(0, Math.min(100, (horizL - 0.1) / 0.88 * 100)));
+  }
+}
+
+function setSkyFromColor(hex, solid = false) {
+  skyIsBlack = hex.toLowerCase() === '#000000';
+  const base = new THREE.Color(hex);
+  skyTopTarget.copy(base).multiplyScalar(0.42);
+  skyHorizTarget = solid ? skyTopTarget.clone() : base.clone();
+  skyHorizBandTarget.copy(skyHorizTarget);
+  const hsl = {}; base.getHSL(hsl);
+  skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
+  skyHorizTarget.getHSL(hsl);
+  horizH = hsl.h; horizS = hsl.s; horizL = hsl.l;
+  syncSkySliders();
+}
+function setSkyHorizBand(hex) {
+  if (hex) skyHorizBandTarget.set(hex); else skyHorizBandTarget.copy(skyHorizTarget);
+}
+// musiclistの「空#xxxxxx」: 空のてっぺん色を加工せず直接(生)設定。3バーの空色を再現する経路。
+function setSkyTopRaw(hex) {
+  skyIsBlack = hex.toLowerCase() === '#000000';
+  skyTopTarget.set(hex);
+  const h = {}; skyTopTarget.getHSL(h);
+  skyH = h.h; skyS = h.s; skyL = h.l;
+  syncSkySliders();
+}
+// musiclistの「地平線#xxxxxx」: 地平線色を加工せず直接(生)上書き。
+function applyHorizDirective(hex) {
+  if (hex) {
+    skyHorizTarget.set(hex);
+    skyHorizBandTarget.copy(skyHorizTarget);
+    const h = {}; skyHorizTarget.getHSL(h);
+    horizH = h.h; horizS = h.s; horizL = h.l;
+    syncSkySliders();
+  } else {
+    setSkyHorizBand(null);
+  }
+}
+setSkyFromColor('#9bbae8');
+
+// ─────────────────────────────────────────────
+//  CAMERA
+// ─────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(70, 1, 0.01, 1000);
+camera.rotation.order = 'YXZ';
+camera.position.set(0, EYE_HEIGHT, -5);
+
+// ─────────────────────────────────────────────
+//  LIGHTING
+// ─────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+sun.position.set(50, 100, 50);
+scene.add(sun);
+
+// ─────────────────────────────────────────────
+//  GROUND
+// ─────────────────────────────────────────────
+const extDesertPlane = (() => {
+  // Darker than the GLB terrain's albedo on purpose: AmbientLight is 1.5, so a
+  // Unlit (MeshBasicMaterial) on purpose: a lit plane is brightened by the
+  // ambient(1.5)+sun lights to ~2.3x and, seen edge-on at the horizon, shows as
+  // a bright line where it peeks past the terrain. Unlit keeps a constant desert
+  // tone that matches the GLB terrain; fog still fades it to the horizon colour.
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshBasicMaterial({ color:0x8a7048 }));
+  m.rotation.x = -Math.PI/2; m.position.set(0,-0.05,-116); m.frustumCulled = false;
+  scene.add(m); return m;
+})();
+
+// ─────────────────────────────────────────────
+//  RAIN
+// ─────────────────────────────────────────────
+let rainActive = false;
+{
+  const CNT=5000, SPR=5, TOP=10, SPD=0.3, LEN=0.2;
+  const pos = new Float32Array(CNT*6);
+  for (let i=0;i<CNT;i++){
+    const x=(Math.random()-.5)*SPR*2, y=Math.random()*TOP, z=(Math.random()-.5)*SPR*2, b=i*6;
+    pos[b]=x;pos[b+1]=y;pos[b+2]=z;pos[b+3]=x;pos[b+4]=y-LEN;pos[b+5]=z;
+  }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var rainSystem=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xaaccff,transparent:true,opacity:1,depthWrite:false}));
+  rainSystem.visible=false; rainSystem.frustumCulled=false; scene.add(rainSystem);
+  window._updateRain=function(){
+    rainSystem.visible=rainActive; if(!rainActive)return;
+    const p=rainSystem.geometry.attributes.position.array;
+    for(let i=0;i<CNT;i++){const b=i*6;p[b+1]-=SPD;p[b+4]-=SPD;
+      if(p[b+4]<-1){const x=(Math.random()-.5)*SPR*2,z=(Math.random()-.5)*SPR*2,y=TOP+Math.random()*4;p[b]=x;p[b+1]=y;p[b+2]=z;p[b+3]=x;p[b+4]=y-LEN;p[b+5]=z;}}
+    rainSystem.geometry.attributes.position.needsUpdate=true;
+    rainSystem.position.set(camera.position.x,0,camera.position.z);
+  };
+}
+
+// ─────────────────────────────────────────────
+//  STARS
+// ─────────────────────────────────────────────
+let starActive = false;
+{
+  const CNT=2000, R=480, pos=new Float32Array(CNT*3);
+  for(let i=0;i<CNT;i++){const t=Math.random()*Math.PI*2,p=Math.random()*Math.PI*.5;pos[i*3]=R*Math.sin(p)*Math.cos(t);pos[i*3+1]=R*Math.cos(p);pos[i*3+2]=R*Math.sin(p)*Math.sin(t);}
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var starSystem=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:1.1,sizeAttenuation:false,depthWrite:false,fog:false}));
+  starSystem.visible=false; starSystem.frustumCulled=false; scene.add(starSystem);
+  window._updateStars=function(){ starSystem.visible=starActive; if(starActive)starSystem.position.copy(camera.position); };
+}
+
+// ─────────────────────────────────────────────
+//  CLOUDS (fbm dome, fully parameter-driven)
+// ─────────────────────────────────────────────
+// ▼▼▼ ここの数値を変えるだけで雲を調整できます ▼▼▼
+const CLOUD_CFG = {
+  // 雲1: 速度連動で奥→手前(天球を越えて)流れる積雲
+  cloud1: {
+    cov:0.40,      // 量(小さいほど多い)
+    soft:0.28,     // 縁のやわらかさ
+    scale:1.2,    // 粒の細かさ(小さいほど雲が大きい)
+    stretch:1.0,   // 横方向の引き伸ばし(1=なし)
+    warp:1.6,      // 形のうねり(大きいほど複雑)
+    detail:0.8,    // 細部の量(0〜1, 大きいほどチラつきやすい)
+    proj:0.06,     // 投影クランプ(小さいほど地平線方向に伸びる)
+    minY:0.04,     // 雲が出る最低の高さ(≈山の高さ。ここからぼかし始め)
+    band:0.06,     // 出始めのフェード幅(山の高さ→1.5倍あたりで徐々に出現)
+    flowBase:0.05,  // 停車時の流れ速度
+    flowSpeed:0.06, // 走行速度への連動係数
+    drift:0.0,     // 左右ドリフト
+    shadow:0.8,    // 最暗部の明るさ(1=真っ白, 0.8=グレー2:白8)
+    litSky:0.5,    // 白い下面に地平線色を反映(0〜1)
+    shadowSky:0.5, // 影/グレー部に上空色を反映(0〜1)
+    opacity:0.9, //全体の不透明度、上げると濃い
+  },
+  // 雲2: 白い雲、ゆっくり左右に流れ天頂まで分布
+  cloud2: {
+    cov:0.45, // 量(小さいほど多い)
+    soft:0.22, // 縁のやわらかさ
+    scale:1.8, // 粒の細かさ(小さいほど雲が大きい)
+    stretch:0.4, // 横方向の引き伸ばし(1=なし)
+    warp:2,   // 形のうねり(大きいほど複雑)
+    detail:0.5, // 細部の量(0〜1, 大きいほどチラつきやすい)
+    proj:0.06,  // 投影クランプ(小さいほど地平線方向に伸びる)
+    minY:0.30, // 雲が出る最低の高さ(≈山の高さ。ここからぼかし始め)
+    band:0.10,  // 出始めのフェード幅(山の高さ→1.5倍あたりで徐々に出現)
+    flowBase:0.0,  // 停車時の流れ速度
+    flowSpeed:0.01, // 走行速度への連動係数
+    drift:0.025, // 左右ドリフト
+    shadow:0.85, // 最暗部の明るさ(1=真っ白, 0.8=グレー2:白8)
+    litSky:0.5, // 白い下面に地平線色を反映(0〜1)
+    shadowSky:0.5, // 影/グレー部に上空色を反映(0〜1)
+    opacity:0.85, //全体の不透明度、上げると濃い
+  },
+};
+// ▲▲▲ ここまで ▲▲▲
+let cloudActive = false;   // clouds shown
+let cloudType   = 1;       // 1 = 雲1, 2 = 雲2
+let cloudTime   = 0;
+let cloudFlow   = 0;       // accumulated forward flow
+let cloudDrift  = 0;       // accumulated left-right drift
+{
+  const U = {
+    uTime:{value:0}, uFlow:{value:0}, uDrift:{value:0},
+    uCov:{value:0.4}, uSoft:{value:0.28}, uScale:{value:0.85}, uStretch:{value:1.0},
+    uWarp:{value:1.6}, uDetail:{value:1.0}, uProj:{value:0.06},
+    uMinY:{value:0.22}, uBand:{value:0.05},
+    uShadow:{value:0.8}, uLitSky:{value:0.5}, uShadowSky:{value:0.5}, uOpacity:{value:0.9},
+    uSkyColor:{value:new THREE.Color(0x4a6fa0)},  // 上空色
+    uSkyHor:{value:new THREE.Color(0xc8daf0)},    // 地平線色
+  };
+  const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
+  const cloudFrag = `
+    precision highp float;
+    uniform float uTime,uFlow,uDrift,uCov,uSoft,uScale,uStretch,uWarp,uDetail,uProj,uMinY,uBand,uShadow,uLitSky,uShadowSky,uOpacity;
+    uniform vec3 uSkyColor, uSkyHor;
+    varying vec3 vDir;
+    float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
+    float noise(vec2 p){
+      vec2 i=floor(p), f=fract(p);
+      float a=hash(i), b=hash(i+vec2(1.0,0.0)), c=hash(i+vec2(0.0,1.0)), d=hash(i+vec2(1.0,1.0));
+      vec2 u=f*f*(3.0-2.0*f);
+      return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+    }
+    float fbm(vec2 p){
+      float v=0.0, a=0.5;
+      for(int i=0;i<6;i++){ v+=a*noise(p); p=p*2.02+vec2(1.7,9.2); a*=0.5; }
+      return v;
+    }
+    void main(){
+      vec3 dir=normalize(vDir);
+      if(dir.y<=0.01) discard;
+      vec2 p = dir.xz/max(dir.y,uProj);
+      p *= uScale; p.x *= uStretch;
+      vec2 sp = p + vec2(uDrift, -uFlow);
+      vec2 q = vec2(fbm(sp), fbm(sp+vec2(3.1,6.7)));
+      float base = fbm(sp + uWarp*q);
+      float detail = fbm(sp*3.0 + 4.0*q);
+      float d = mix(base, base*0.7+detail*0.3, uDetail);
+      float dens = smoothstep(uCov, uCov+uSoft, d);
+      dens *= smoothstep(uMinY, uMinY+uBand, dir.y);   // 最低の高さより上だけ
+      float lit = smoothstep(uCov, uCov+0.5, d);
+      vec3 darkest = mix(vec3(0.5), vec3(1.0), uShadow); // 最暗部の明るさ
+      // 空色は「明るさそのまま・色相だけ」乗せる(正規化して暗くならない/消えない)
+      vec3 horTint = uSkyHor   / max(max(uSkyHor.r,  uSkyHor.g),  max(uSkyHor.b,  0.001));
+      vec3 topTint = uSkyColor / max(max(uSkyColor.r,uSkyColor.g),max(uSkyColor.b,0.001));
+      vec3 litCol  = mix(vec3(1.0), horTint, uLitSky);          // 白い下面=地平線色相
+      vec3 darkCol = mix(darkest, darkest*topTint, uShadowSky); // 影・グレー部=上空色相
+      vec3 col = mix(darkCol, litCol, lit);
+      float a = dens*uOpacity;
+      if(a<0.003) discard;
+      gl_FragColor=vec4(col, a);
+    }`;
+  const cloudMat = new THREE.ShaderMaterial({
+    uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
+    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: true, fog: false,
+  });
+  const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(700,48,24), cloudMat);
+  cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
+  scene.add(cloudDome);
+  window._updateClouds = function(dt){
+    cloudDome.visible = cloudActive;
+    if(!cloudActive) return;
+    const cfg = (cloudType===2) ? CLOUD_CFG.cloud2 : CLOUD_CFG.cloud1;
+    const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
+    cloudTime  += dt;
+    cloudFlow  += dt * (cfg.flowBase + spd*cfg.flowSpeed);
+    cloudDrift += dt * cfg.drift;
+    U.uTime.value=cloudTime; U.uFlow.value=cloudFlow; U.uDrift.value=cloudDrift;
+    U.uCov.value=cfg.cov; U.uSoft.value=cfg.soft; U.uScale.value=cfg.scale; U.uStretch.value=cfg.stretch;
+    U.uWarp.value=cfg.warp; U.uDetail.value=cfg.detail; U.uProj.value=cfg.proj;
+    U.uMinY.value=cfg.minY; U.uBand.value=cfg.band;
+    U.uShadow.value=cfg.shadow; U.uLitSky.value=cfg.litSky; U.uShadowSky.value=cfg.shadowSky; U.uOpacity.value=cfg.opacity;
+    U.uSkyColor.value.copy(skyUniforms.topColor.value);
+    U.uSkyHor.value.copy(skyUniforms.horizonColor.value);
+    cloudDome.position.copy(camera.position);
+  };
+}
+
+// Sky-decoration button cycle: 0=none, 1=stars, 2=cloud1, 3=cloud2
+let skyDecoMode = 0;
+const SKY_DECO_ICON = [
+  // 0: 星(オフ=緑) — 元の星ボタン
+  '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
+  // 1: 星(点灯=白)
+  '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
+  // 2: 雲1 — 雲ひとつ
+  '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" fill="currentColor"/>',
+  // 3: 雲2 — 2つ重なった雲(左上に小さい雲・右下に手前の大きい雲)
+  '<g fill="currentColor"><circle cx="6" cy="8" r="2.1"/><circle cx="8.5" cy="6.8" r="2.6"/><circle cx="11" cy="8" r="2.1"/><rect x="5.5" y="7.5" width="6" height="2.3"/></g><g fill="currentColor"><circle cx="11" cy="15" r="2.9"/><circle cx="14.3" cy="13.2" r="3.5"/><circle cx="17.5" cy="14.4" r="2.9"/><circle cx="19.6" cy="15.6" r="2.2"/><rect x="10.5" y="14.5" width="9.6" height="3.2"/></g>',
+];
+function applySkyDeco(){
+  starActive  = (skyDecoMode===1);
+  cloudActive = (skyDecoMode>=2);
+  cloudType   = (skyDecoMode===3)?2:1;
+  const btn = document.getElementById('btn-star');
+  if(btn){
+    btn.classList.toggle('active', skyDecoMode!==0);
+    const svg = btn.querySelector('svg');
+    if(svg) svg.innerHTML = SKY_DECO_ICON[skyDecoMode];
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MOUNTAIN RINGS
+// ─────────────────────────────────────────────
+function buildMountainRings() {
+  // White silhouette mask; final colour comes from material.color so the
+  // mountains can be tinted toward the horizon colour every frame.
+  function makeTex(seed,rs=1){
+    const W=2048,H=512,cv=document.createElement('canvas'); cv.width=W;cv.height=H;
+    const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const prof=new Float32Array(W+1);
+    for(let x=0;x<=W;x++){const t=x/W*Math.PI*2;let h=0;h+=.30*Math.sin(t*3+seed);h+=.20*Math.sin(t*7+seed*1.3);h+=.10*Math.sin(t*13+seed*.7);h+=.05*Math.sin(t*23+seed*2.1);h+=.03*Math.sin(t*41+seed*1.7);prof[x]=h;}
+    const mn=Math.min(...prof),mx=Math.max(...prof);
+    ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.moveTo(0,H);
+    for(let x=0;x<=W;x++){const n=(prof[x]-mn)/(mx-mn);ctx.lineTo(x,H*(.60+(1-n)*.38*rs));}
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+    return new THREE.CanvasTexture(cv);
+  }
+  // grey: base grey tone of the layer. tint: how strongly the horizon colour
+  // is mixed in (farther rings haze toward the horizon more).
+  const layers=[
+    {r:150,h:90,cy:15,grey:0x6f6f72,tint:0.35,seed:1.2,rs:37/90},
+    {r:260,h:95,cy:17,grey:0x7c7c80,tint:0.5, seed:2.7,rs:43/95},
+    {r:400,h:100,cy:20,grey:0x8c8c90,tint:0.65,seed:4.1,rs:53/100},
+  ];
+  return layers.map(L=>{
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(L.r,L.r,L.h,64,1,true),
+      new THREE.MeshBasicMaterial({map:makeTex(L.seed,L.rs),color:L.grey,side:THREE.BackSide,transparent:true,alphaTest:.05,depthWrite:false,fog:false}));
+    m.position.y=L.cy; m.frustumCulled=false;
+    m.userData.baseGrey=new THREE.Color(L.grey);
+    m.userData.tint=L.tint;
+    scene.add(m); return m;
+  });
+}
+const mountainRings = buildMountainRings();
+// How much the horizon colour is darkened before tinting the mountains, so
+// they stay a visible silhouette instead of washing out to white.
+const MTN_HORIZON_DARKEN = 0.55;
+const _mtnTint = new THREE.Color();
+
+// ─────────────────────────────────────────────
+//  AUDIO / BGM
+// ─────────────────────────────────────────────
+const audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.gain.value = 0.7;
+masterGain.connect(audioCtx.destination);
+const audioBufs = {};
+let playingSrc = null, playingKey = null;
+
+function playBgm(key) {
+  if (key === playingKey) return;
+  if (playingSrc) { playingSrc.stop(); playingSrc.disconnect(); playingSrc = null; }
+  playingKey = key;
+  if (!audioBufs[key]) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = audioBufs[key]; src.loop = true; src.connect(masterGain); src.start(0);
+  playingSrc = src;
+}
+function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1'); }
+
+// ─────────────────────────────────────────────
+//  YOUTUBE / RADIO
+// ─────────────────────────────────────────────
+let ytPlayer = null, ytReady = false;
+let currentVolAdj = 1.0, baseVol = 70;
+let seekOnPlay = null;
+let playlist = [{ id:'3Fy8XYr6J6s', type:'yt', name:'Silence', color:null, rain:false, star:false, volAdj:1 }];
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
+let trackWasConfirmed = false;
+let playlistActive = false;   // a playlist is currently playing (auto-advance on)
+let playlistBrowse = false;   // user is browsing within a playlist
+let currentPL = null;         // active playlist entry { name, tracks[] }
+let plTrackIdx = 0;           // current track index within currentPL
+let nowPlayingLabel = '';      // label used in trackBar / connectBar
+
+const nowPlayingEl  = null;
+const dpadCenterEl = document.getElementById('dpad-center');
+function setPlActive(on) {
+  dpadCenterEl.classList.toggle('pl-active', on);
+}
+function exitPlaylist() {
+  if(playlistBrowse&&currentPL){ playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false); }
+}
+const connectingEl  = connectBar;
+
+const decisionSE = new Audio('music/決定ボタンを押す7.mp3');
+
+function parseSongLine(l) {
+  const urlM=l.match(/https?:\/\/[^「\s]+/); if(!urlM) return null;
+  const url=urlM[0], rest=l.slice(urlM.index+url.length).trim();
+  const nameM=rest.match(/「([^」]*)」/); const name=nameM?nameM[1]:'';
+  const kw=rest.replace(/「[^」]*」/,'');
+  // 「空#」「地平線#」はスペース(半角/全角)を挟んでもよい
+  const horizM=kw.match(/地平線[ 　]*(#[0-9a-fA-F]{6})/); const horiz=horizM?horizM[1]:null;
+  const skyRawM=kw.match(/空[ 　]*(#[0-9a-fA-F]{6})/); const skyRaw=skyRawM?skyRawM[1]:null;
+  // 「空#」「地平線#」を除いた残りから従来の単一色(#xxxxxx, ×0.42加工)を拾う
+  const kwPlain=kw.replace(/地平線[ 　]*#[0-9a-fA-F]{6}/g,'').replace(/空[ 　]*#[0-9a-fA-F]{6}/g,'');
+  const colorM=kwPlain.match(/#[0-9a-fA-F]{6}/); const color=colorM?colorM[0]:null;
+  const volM=kw.match(/音量([+-]?\d+)[%％]/); const volAdj=volM?1+parseInt(volM[1])/100:1;
+  const startM=kw.match(/開始(\d+)秒/); const startSec=startM?parseInt(startM[1]):0;
+  const isYT=/youtube\.com|youtu\.be/.test(url);
+  const vid=isYT?(url.match(/[?&]v=([^&]+)/)?.[1]||url):url.replace(/&amp;/g,'&');
+  // 空デコ: 雲2→3, 雲1→2, 星→1, なし→0
+  const deco=/雲2/.test(kw)?3:/雲1/.test(kw)?2:/星/.test(kw)?1:0;
+  return {id:vid,type:isYT?'yt':'radio',name,color,skyRaw,rain:/雨/.test(kw),star:/星/.test(kw),deco,solid:/単色/.test(kw),horiz,volAdj,startSec};
+}
+
+async function loadPlaylist() {
+  try {
+    const text = await (await fetch('musiclist.txt')).text();
+    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
+    const entries = [];
+    for(const l of lines) {
+      const plM = l.match(/^(プレイリスト「[^」]+」)(\.txt)?$/);
+      if(plM) {
+        const plName = plM[1];
+        const filename = plName + '.txt';
+        try {
+          const plText = await (await fetch(filename)).text();
+          const tracks = plText.split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('#'))
+            .map(parseSongLine).filter(Boolean);
+          if(tracks.length>0) entries.push({type:'playlist',name:plName,tracks,id:null,color:null,rain:false,star:false,volAdj:1});
+        } catch(_) { /* file not found, skip */ }
+        continue;
+      }
+      const urlM = l.match(/https?:\/\/[^「\s]+/);
+      if(!urlM){ entries.push({type:'label',name:l,id:null}); continue; }
+      const song = parseSongLine(l);
+      if(song) entries.push(song);
+    }
+    if(entries.length>0){playlist=entries;}
+  } catch(e){console.warn('[playlist] load failed');}
+}
+
+function trackLabel(e) {
+  if(!e||!e.name) return e?e.id:'';
+  const c=e.name.indexOf(','); return c===-1?e.name:`${e.name.slice(0,c).trim()} - ${e.name.slice(c+1).trim()}`;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function setDisp(el,text,{prefix='',suffix=''}={}){
+  const sep=text.indexOf(' ▷ ');
+  if(sep!==-1){
+    const plName=text.slice(0,sep), track=text.slice(sep+3);
+    el.innerHTML=`<span class="pl-name-small">${esc(plName)}</span><br>${esc(prefix+track+suffix)}`;
+  } else {
+    el.textContent=prefix+text+suffix;
+  }
+}
+
+function selectTrack(delta) {
+  if(displayMode>0){ displayMode=0; applyDisplayMode(); }
+
+  if(playlistBrowse && currentPL) {
+    const n = currentPL.tracks.length;
+    plTrackIdx = ((plTrackIdx + delta) % n + n) % n;
+    isBrowsing = true;
+    connectingEl.style.display = 'block';
+    setDisp(connectingEl,`${currentPL.name} ▷ ${trackLabel(currentPL.tracks[plTrackIdx])}`);
+    clearTimeout(selectDebounce);
+    return;
+  }
+
+  if(!playlist.length) return;
+  playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
+  const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
+  connectingEl.style.display='block';
+  if(e.type==='label'){ connectingEl.textContent=`── ${e.name} ──`; }
+  else if(e.type==='playlist'){
+    const m=e.name.match(/^(プレイリスト)(「[^」]*」)$/);
+    if(m) connectingEl.innerHTML=`${esc(m[1])}<br>${esc(m[2])}`;
+    else connectingEl.textContent=e.name;
+  } else { connectingEl.textContent=trackLabel(e); }
+  clearTimeout(selectDebounce);
+}
+
+function playTrack(track, label) {
+  isBrowsing=false; trackLoading=true; trackWasConfirmed=true;
+  nowPlayingLabel = label;
+  decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
+  connectingEl.style.display='block';
+  setDisp(connectingEl,label,{suffix:'　接続中・・・'});
+  if(track.color) setSkyFromColor(track.color,!!track.solid);
+  if(track.skyRaw) setSkyTopRaw(track.skyRaw);
+  applyHorizDirective(track.horiz);
+  rainActive=!!track.rain; skyDecoMode=track.deco??(track.star?1:0); applySkyDeco();
+  btnRain.classList.toggle('active',rainActive);
+  baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
+  applyVolAdj();
+  setDisp(trackBarEl,label,{prefix:'▶  '});
+  if(nowPlayingEl) nowPlayingEl.textContent=`▶  ${label}`;
+  if(track.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(track.id); }
+  else { stopRadio(); if(ytReady&&ytPlayer){ seekOnPlay=track.startSec>0?track.startSec:null; ytPlayer.loadVideoById({videoId:track.id,startSeconds:track.startSec??0}); } }
+}
+
+function confirmTrack() {
+  if(!isBrowsing) return;
+  if(musicPlaying&&!radioActive&&!(playlistBrowse&&currentPL)) return;
+
+  if(playlistBrowse && currentPL) {
+    const track = currentPL.tracks[plTrackIdx];
+    playTrack(track, `${currentPL.name} ▷ ${trackLabel(track)}`);
+    return;
+  }
+
+  const e = playlist[playlistIdx];
+  if(e.type==='playlist') {
+    playlistActive=true; playlistBrowse=true;
+    currentPL=e; plTrackIdx=0;
+    setPlActive(true);
+    const track=e.tracks[0];
+    playTrack(track, `${e.name} ▷ ${trackLabel(track)}`);
+    return;
+  }
+
+  playlistActive=false; playlistBrowse=false; currentPL=null; setPlActive(false);
+  playingIdx=playlistIdx;
+  playTrack(e, trackLabel(e));
+}
+
+function applyVolAdj() {
+  const v=Math.min(100,Math.max(0,Math.round(baseVol*currentVolAdj)));
+  ytVolSlider.value=v;
+  document.getElementById('yt-vol2-lbl').textContent=v+'%';
+  if(ytReady&&ytPlayer) ytPlayer.setVolume(v);
+  radioAudio.volume=v/100;
+}
+
+function seekYT(sec) { if(!musicPlaying||radioActive) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
+function toggleYt() {
+  if(radioActive){ radioAudio.paused?radioAudio.play().catch(console.error):radioAudio.pause(); return; }
+  if(!ytReady||!ytPlayer) return;
+  ytPlayer.getPlayerState()===1?ytPlayer.pauseVideo():ytPlayer.playVideo();
+}
+
+function loadYTApi() {
+  return new Promise(resolve=>{
+    if(window.YT?.Player){resolve();return;}
+    const tag=document.createElement('script'); tag.src='https://www.youtube.com/iframe_api';
+    const prev=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{if(prev)prev();resolve();};
+    document.head.appendChild(tag);
+  });
+}
+async function initYTPlayer() {
+  try {
+    await loadYTApi();
+    ytPlayer=await new Promise((res,rej)=>{
+      new YT.Player('yt-container',{width:400,height:300,videoId:'3Fy8XYr6J6s',
+        playerVars:{autoplay:0,controls:0,fs:0},
+        events:{
+          onReady:e=>{ytReady=true;res(e.target);},
+          onStateChange:e=>{
+            if(e.data===1){
+              trackLoading=false;
+              if(seekOnPlay!==null){ytPlayer.seekTo(seekOnPlay,true);seekOnPlay=null;}
+              const lbl=nowPlayingLabel||trackLabel(playlist[playingIdx]);
+              connectingEl.style.display='block';setDisp(connectingEl,lbl);
+              setDisp(trackBarEl,lbl,{prefix:'▶  '});isBrowsing=false;applyVolAdj();setMusicBtn(true);
+            }
+            if(e.data===2){trackLoading=false;setMusicBtn(false);}
+            if(e.data===0){
+              trackLoading=false;
+              if(playlistActive&&currentPL){
+                const nextIdx=plTrackIdx+1;
+                if(nextIdx<currentPL.tracks.length){
+                  plTrackIdx=nextIdx;
+                  const next=currentPL.tracks[plTrackIdx];
+                  const lbl=`${currentPL.name} ▷ ${trackLabel(next)}`;
+                  nowPlayingLabel=lbl;
+                  setDisp(trackBarEl,lbl,{prefix:'▶  '});
+                  if(next.color) setSkyFromColor(next.color,!!next.solid);
+                  if(next.skyRaw) setSkyTopRaw(next.skyRaw);
+                  applyHorizDirective(next.horiz);
+                  rainActive=!!next.rain; skyDecoMode=next.deco??(next.star?1:0); applySkyDeco();
+                  btnRain.classList.toggle('active',rainActive);
+                  currentVolAdj=next.volAdj??1; applyVolAdj();
+                  seekOnPlay=next.startSec>0?next.startSec:null;
+                  ytPlayer.loadVideoById({videoId:next.id,startSeconds:next.startSec??0});
+                } else {
+                  playlistActive=false; playlistBrowse=false; currentPL=null; setPlActive(false);
+                  currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);
+                  setMusicBtn(false);clearNowPlaying();
+                }
+              } else {
+                currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);
+                setMusicBtn(false);clearNowPlaying();
+              }
+            }
+          },
+          onError:e=>rej(e.data),
+        }
+      });
+    });
+  } catch(e){console.error('[YT]',e);}
+}
+
+// Radio
+const radioAudio=new Audio(); let radioHls=null, radioActive=false;
+function playRadio(url){
+  if(radioHls){radioHls.destroy();radioHls=null;} radioAudio.pause();
+  radioAudio.volume=Math.min(1,baseVol/100*currentVolAdj);
+  if(typeof Hls!=='undefined'&&Hls.isSupported()&&/\.m3u8/i.test(url)){
+    radioHls=new Hls();radioHls.loadSource(url);radioHls.attachMedia(radioAudio);
+    radioHls.on(Hls.Events.MANIFEST_PARSED,()=>radioAudio.play().catch(console.error));
+  } else {radioAudio.src=url;radioAudio.play().catch(console.error);}
+  radioActive=true;
+}
+function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
+radioAudio.addEventListener('playing',()=>{trackLoading=false;const lbl=nowPlayingLabel||trackLabel(playlist[playingIdx]);connectingEl.style.display='block';setDisp(connectingEl,lbl);setDisp(trackBarEl,lbl,{prefix:'▶  '});setMusicBtn(true);});
+radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
+radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
+
+// ─────────────────────────────────────────────
+//  SPECIAL MODELS (loop sequence)
+// ─────────────────────────────────────────────
+let saModelMain=null,saModelCopy=null;
+let model02=null,model02Copy=null,model03=null,model03Copy=null,model04=null,model04Copy=null;
+let model05=null,model05Copy=null,model06=null,model06Copy=null,model07=null,model07Copy=null;
+let model08=null,model08Copy=null,model09=null,model09Copy=null;
+let gameStartTime=null, totalPausedMs=0, pauseStartTime=null, cycleStartElapsed=0;
+let loopCount=0;
+
+function getElapsedMs(){
+  if(!gameStartTime)return 0;
+  const cur=pauseStartTime?(performance.now()-pauseStartTime):0;
+  return performance.now()-gameStartTime-totalPausedMs-cur;
+}
+
+const LOOP_SEQUENCE=[
+  'sa01','sa01','sa01','sa02','sa01','sa01','sa01','sa01','sa03','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa06',
+  'sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa03','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa05',
+  'sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa02','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa04',
+  'sa01','sa01','sa01','sa01','sa01','sa03','sa01','sa01','sa01','sa01','sa01','sa01','sa02','sa01','sa01','sa01','sa01','sa01',
+  'sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa03','sa01','sa01','sa01','sa01','sa07',
+  'sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa01','sa09','sa01','sa01','sa01','sa01','sa01','sa08',
+];
+
+function resolveSeq(idx){
+  const k=LOOP_SEQUENCE[((idx%LOOP_SEQUENCE.length)+LOOP_SEQUENCE.length)%LOOP_SEQUENCE.length];
+  if(k==='sa02'&&!model02)return'sa01'; if(k==='sa03'&&!model03)return'sa01';
+  if(k==='sa04'&&!model04)return'sa01'; if(k==='sa05'&&!model05)return'sa01';
+  if(k==='sa06'&&!model06)return'sa01'; if(k==='sa07'&&!model07)return'sa01';
+  if(k==='sa08'&&!model08)return'sa01'; if(k==='sa09'&&!model09)return'sa01';
+  return k;
+}
+function setMainModel(k){
+  if(saModelMain) saModelMain.visible=(k==='sa01');
+  if(model02)model02.visible=(k==='sa02');if(model03)model03.visible=(k==='sa03');
+  if(model04)model04.visible=(k==='sa04');if(model05)model05.visible=(k==='sa05');
+  if(model06)model06.visible=(k==='sa06');if(model07)model07.visible=(k==='sa07');
+  if(model08)model08.visible=(k==='sa08');if(model09)model09.visible=(k==='sa09');
+  for(const[rock,zones]of zoneRocks)rock.visible=!zones.has(k);
+}
+function setCopyModel(k){
+  if(saModelCopy)saModelCopy.visible=(k==='sa01');
+  if(model02Copy)model02Copy.visible=(k==='sa02');if(model03Copy)model03Copy.visible=(k==='sa03');
+  if(model04Copy)model04Copy.visible=(k==='sa04');if(model05Copy)model05Copy.visible=(k==='sa05');
+  if(model06Copy)model06Copy.visible=(k==='sa06');if(model07Copy)model07Copy.visible=(k==='sa07');
+  if(model08Copy)model08Copy.visible=(k==='sa08');if(model09Copy)model09Copy.visible=(k==='sa09');
+}
+function handleLoopTransition(){
+  loopCount++;
+  trafficCars.forEach(tc=>{if(tc.active&&tc.oncoming){tc.mesh.visible=false;tc.active=false;tc.done=true;}});
+  const cur=resolveSeq(loopCount), nxt=resolveSeq(loopCount+1);
+  setMainModel(cur); setCopyModel(nxt);
+}
+
+// ─────────────────────────────────────────────
+//  ROCKS
+// ─────────────────────────────────────────────
+const zoneRocks=new Map();
+function getRockZones(wx,wz){
+  const s=new Set();
+  if(wx<-1.6&&wz>=-97&&wz<=-65)s.add('sa04');
+  if(wx>=1.6&&wz>=20.8&&wz<=23)s.add('sa05');
+  if(wx<-1.6&&wz>=-93&&wz<=-55)s.add('sa06');
+  if(wx<-1.6&&wz>=-47&&wz<=-16)s.add('sa07');
+  return s;
+}
+function addRocks(){
+  const colors=[0xd0d0cc,0xd9cc90,0xd4a08a,0xccb890];
+  const rng=(a,b)=>a+Math.random()*(b-a);
+  for(let i=0;i<3000;i++){
+    const wx=rng(PLAY_X_MIN,PLAY_X_MAX),wz=rng(PLAY_Z_MIN,PLAY_Z_MAX);
+    if(wx>=-2.1&&wx<=2.1)continue;
+    const r=rng(.02,.0875),sx=rng(.7,1.3),sy=rng(.4,.85),sz=rng(.7,1.3);
+    const rx=rng(0,Math.PI),ry=rng(0,Math.PI),rz=rng(0,Math.PI),ci=Math.floor(Math.random()*4);
+    const zones=getRockZones(wx,wz);
+    for(const dz of[0,-LOOP_LENGTH]){
+      const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(r,0),new THREE.MeshLambertMaterial({color:colors[ci]}));
+      rock.scale.set(sx,sy,sz);rock.rotation.set(rx,ry,rz);rock.position.set(wx,r*sy*.45,wz+dz);
+      scene.add(rock);if(zones.size>0)zoneRocks.set(rock,zones);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  TRAFFIC CARS
+// ─────────────────────────────────────────────
+const trafficCars=[
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:30000,lifetime:30000,oncoming:true},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:90000,lifetime:30000,oncoming:true},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:240000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:600000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1200000,lifetime:30000,oncoming:true},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1500000,lifetime:30000,oncoming:true},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1680000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
+  {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1800000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
+];
+['car01.glb','car05.glb','car02.glb','car04.glb','car03.glb','car06.glb','car02.glb','car01.glb'].forEach((f,i)=>{
+  new GLTFLoader().load(f+'?v='+Date.now(),gltf=>{
+    const m=gltf.scene;
+    m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
+      const fix=mat=>{if(!mat)return;mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;};
+      Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
+    m.scale.set(.4,.4,.4);m.visible=false;scene.add(m);trafficCars[i].mesh=m;
+  },null,e=>console.warn(f,e));
+});
+
+function resetTrafficCars(){trafficCars.forEach(tc=>{tc.active=false;tc.done=false;tc.spawnElapsed=0;tc.relDist=0;if(tc.mesh)tc.mesh.visible=false;});}
+
+let playerZDeltaFrame=0;
+function updateAllTrafficCars(dt){
+  if(!gameStartTime)return;
+  const elapsed=getElapsedMs();
+  let ce=elapsed-cycleStartElapsed;
+  if(ce>=CYCLE_DURATION_MS){cycleStartElapsed+=CYCLE_DURATION_MS;ce-=CYCLE_DURATION_MS;resetTrafficCars();return;}
+  for(const tc of trafficCars){
+    if(!tc.mesh)continue;
+    if(!tc.active&&!tc.done&&ce>=tc.spawnAt){
+      if(ce-tc.spawnAt>SPAWN_WINDOW_MS){tc.done=true;}
+      else{
+        const sx=tc.oncoming?ONCOMING_X:SAMEDIR_X;
+        let sz=camera.position.z-100;
+        if(tc.oncoming)sz=Math.max(sz,PLAY_Z_MIN); else if(sz<PLAY_Z_MIN)sz+=LOOP_LENGTH;
+        tc.mesh.position.set(sx,0,sz);tc.mesh.rotation.y=tc.oncoming?Math.PI:0;
+        tc.mesh.visible=true;tc.active=true;tc.spawnElapsed=ce;tc.relDist=0;
+      }
+    }
+    if(!tc.active)continue;
+    if(ce-tc.spawnElapsed>=tc.lifetime){tc.mesh.visible=false;tc.active=false;tc.done=true;continue;}
+    if(tc.oncoming){
+      tc.mesh.position.z+=CAR_SPEED*dt;
+      if(tc.mesh.position.z>=PLAY_Z_MAX){tc.mesh.visible=false;tc.active=false;tc.done=true;}
+    } else {
+      tc.mesh.position.z-=CAR_SPEED*dt;
+      if(tc.mesh.position.z<PLAY_Z_MIN)tc.mesh.position.z+=LOOP_LENGTH;
+      tc.relDist+=playerZDeltaFrame-CAR_SPEED*dt;
+      if(tc.relDist>=SAMEDIR_EXIT_DIST){tc.mesh.visible=false;tc.active=false;tc.done=true;}
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  GLTF LOADER (main environment)
+// ─────────────────────────────────────────────
+function loadSpecialModel(file,px,py,pz){
+  return new Promise(resolve=>{
+    new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
+      const m=gltf.scene;
+      m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;};
+        Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
+      m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
+      const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
+      resolve({main:m,copy:mc});
+    },null,e=>{console.error(file,e);resolve(null);});
+  });
+}
+
+new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
+  const model=gltf.scene;
+  model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;};
+    Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
+  model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
+  model.position.set(-cen.x,0,-cen.z); scene.add(model); model.updateMatrixWorld(true);
+  addRocks();
+  const mc=model.clone(); mc.position.set(model.position.x,model.position.y,model.position.z-LOOP_LENGTH);
+  scene.add(mc); saModelMain=model; saModelCopy=mc;
+  const sp=model.position;
+  loadSpecialModel('sa02.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model02=r.main;model02Copy=r.copy;}});
+  loadSpecialModel('sa03.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model03=r.main;model03Copy=r.copy;}});
+  loadSpecialModel('sa04.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model04=r.main;model04Copy=r.copy;}});
+  loadSpecialModel('sa05.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model05=r.main;model05Copy=r.copy;}});
+  loadSpecialModel('sa06.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model06=r.main;model06Copy=r.copy;}});
+  loadSpecialModel('sa07.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model07=r.main;model07Copy=r.copy;}});
+
+  loadingEl.style.display='none';
+  startOverlay.style.display='flex';
+  loadProgEl.textContent='';
+}, xhr=>{
+  if(xhr.total) loadProgEl.textContent=`${Math.round(xhr.loaded/xhr.total*100)}%`;
+}, err=>{ console.error(err); loadProgEl.textContent='読み込みエラー'; });
+
+// Load heavier models in background after start
+function loadHeavyModels(){
+  const sp=saModelMain?.position??{x:0,y:0,z:0};
+  loadSpecialModel('sa08.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model08=r.main;model08Copy=r.copy;}});
+  loadSpecialModel('sa09.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model09=r.main;model09Copy=r.copy;}});
+}
+
+// ─────────────────────────────────────────────
+//  AUDIO PRELOAD
+// ─────────────────────────────────────────────
+const audioLoadMsg=document.getElementById('audio-load-msg');
+const startBtn=document.getElementById('start-btn');
+(async()=>{
+  try {
+    audioLoadMsg.textContent='読み込み中・・・';
+    const ab1=await fetch('music/drive_on_freeway1.mp3').then(r=>r.arrayBuffer());
+    audioBufs['freeway1']=await audioCtx.decodeAudioData(ab1);
+    audioLoadMsg.style.display='none';
+    startBtn.disabled=false; startBtn.style.opacity=''; startBtn.style.cursor='';
+    const ab2=await fetch('music/drive_on_freeway2.mp3').then(r=>r.arrayBuffer());
+    audioBufs['freeway2']=await audioCtx.decodeAudioData(ab2);
+  } catch(e){
+    audioLoadMsg.textContent='音声の読み込みに失敗しました。再読み込みしてください。';
+    audioLoadMsg.style.color='#f88';
+    startBtn.disabled=false; startBtn.style.opacity=''; startBtn.style.cursor='';
+  }
+})();
+
+loadPlaylist().then(()=>initYTPlayer()).catch(console.error);
+
+// ─────────────────────────────────────────────
+//  MOBILE INPUT STATE
+// ─────────────────────────────────────────────
+let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
+let touchActive=false, touchLastX=0, touchLastY=0;
+let gameActive=false, autoPilot=false;
+let cruiseSpeed=0;
+let displayMode=0;
+
+const speedSlider = document.getElementById('speed-slider');
+const ytVolSlider  = document.getElementById('yt-vol2');
+const engVolSlider = document.getElementById('engine-vol2');
+
+speedSlider.addEventListener('input',e=>{ if(gameActive) cruiseSpeed=+e.target.value/100*MAX_CRUISE; });
+
+engVolSlider.addEventListener('input',e=>{
+  masterGain.gain.value=e.target.value/100;
+  document.getElementById('engine-vol2-lbl').textContent=e.target.value+'%';
+});
+ytVolSlider.addEventListener('input',e=>{
+  baseVol=parseInt(e.target.value); applyVolAdj();
+});
+
+const skyColorSlider = document.getElementById('sky-color-slider');
+const skySatSlider = document.getElementById('sky-sat-slider');
+const skyBrightSlider = document.getElementById('sky-bright-slider');
+skyColorSlider.addEventListener('input', e => {
+  const v = e.target.value / 100;
+  if (skySliderMode === 0) {
+    skyH = v;
+    if (skyS === 0) skyS = 0.6;
+    if (skyL === 0) skyL = 0.1;
+  } else {
+    horizH = v;
+    if (horizS === 0) horizS = 0.6;
+    if (horizL === 0) horizL = 0.1;
+  }
+  applySkySliders();
+});
+skySatSlider.addEventListener('input', e => {
+  const v = e.target.value / 100;
+  if (skySliderMode === 0) { skyS = v; }
+  else { horizS = v; }
+  applySkySliders();
+});
+skyBrightSlider.addEventListener('input', e => {
+  const v = 0.1 + e.target.value / 100 * 0.88;
+  if (skySliderMode === 0) { skyL = v; }
+  else { horizL = v; }
+  applySkySliders();
+});
+
+let touchIsDrag=false, lastTapTime=0;
+const DRAG_THRESHOLD=8;
+wrapper.addEventListener('touchstart',e=>{
+  if(e.target.closest('#start-overlay,#sound-panel,#loading-screen'))return;
+  if(fsState===2) e.preventDefault();
+  if(e.touches.length===1){touchActive=true;touchIsDrag=false;touchLastX=e.touches[0].clientX;touchLastY=e.touches[0].clientY;}
+},{passive:false});
+wrapper.addEventListener('touchmove',e=>{
+  if(!touchActive||e.touches.length!==1)return;
+  const dx=e.touches[0].clientX-touchLastX, dy=e.touches[0].clientY-touchLastY;
+  if(Math.abs(dx)>DRAG_THRESHOLD||Math.abs(dy)>DRAG_THRESHOLD) touchIsDrag=true;
+  touchLastX=e.touches[0].clientX; touchLastY=e.touches[0].clientY;
+  yaw-=dx*0.003; pitch-=dy*0.002;
+  pitch=Math.max(-1.3,Math.min(1.3,pitch));
+},{passive:true});
+wrapper.addEventListener('touchend',()=>{
+  if(!touchIsDrag){
+    const now=Date.now();
+    if(now-lastTapTime<400){ toggleFullscreen(); lastTapTime=0; }
+    else lastTapTime=now;
+  }
+  touchActive=false; touchIsDrag=false;
+});
+wrapper.addEventListener('touchcancel',()=>{touchActive=false;touchIsDrag=false;});
+let mouseDown=false,mouseLastX=0,mouseLastY=0;
+wrapper.addEventListener('mousedown',e=>{if(e.target===canvas||e.target===document.getElementById('crosshair')){mouseDown=true;mouseLastX=e.clientX;mouseLastY=e.clientY;}});
+window.addEventListener('mouseup',()=>{mouseDown=false;});
+window.addEventListener('mousemove',e=>{
+  if(!mouseDown)return;
+  yaw-=(e.clientX-mouseLastX)*0.003;pitch-=(e.clientY-mouseLastY)*0.002;
+  pitch=Math.max(-1.3,Math.min(1.3,pitch));
+  mouseLastX=e.clientX;mouseLastY=e.clientY;
+});
+
+// 隠しコマンド: ↑↑↓↓←→←→ 音量 で 空色/地平線色のHEX表示をトグル
+const KONAMI = ['up','up','down','down','left','right','left','right','sound'];
+let konamiIdx = 0;
+let colorHudOn = false;
+const colorHudEl = document.createElement('div');
+colorHudEl.id = 'color-hud';
+colorHudEl.style.cssText = 'position:absolute;top:30px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;display:none;letter-spacing:.03em;';
+wrapper.appendChild(colorHudEl);
+function konamiInput(tok){
+  konamiIdx = (tok===KONAMI[konamiIdx]) ? konamiIdx+1 : (tok===KONAMI[0] ? 1 : 0);
+  if(konamiIdx===KONAMI.length){
+    konamiIdx = 0;
+    colorHudOn = !colorHudOn;
+    colorHudEl.style.display = colorHudOn ? 'block' : 'none';
+  }
+}
+
+// D-pad
+let dpadHoldTimer=null, dpadHoldInterval=null;
+function clearDpadHold(){ clearTimeout(dpadHoldTimer); clearInterval(dpadHoldInterval); dpadHoldTimer=dpadHoldInterval=null; }
+document.querySelectorAll('.dpad-btn').forEach(btn=>{
+  const dir=btn.dataset.dir; if(!dir)return;
+  const press=()=>{
+    btn.classList.add('pressed');
+    konamiInput(dir);
+    if(dir==='up'){
+      selectTrack(-1);
+      dpadHoldTimer=setTimeout(()=>{ dpadHoldInterval=setInterval(()=>selectTrack(-5),200); },500);
+    } else if(dir==='down'){
+      selectTrack(+1);
+      dpadHoldTimer=setTimeout(()=>{ dpadHoldInterval=setInterval(()=>selectTrack(+5),200); },500);
+    } else if(dir==='left'){seekYT(-10);}
+    else if(dir==='right'){seekYT(+10);}
+    else if(dir==='center'){ exitPlaylist(); }
+  };
+  const release=()=>{ btn.classList.remove('pressed'); clearDpadHold(); };
+  btn.addEventListener('mousedown',press);
+  btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+  btn.addEventListener('mouseup',release);btn.addEventListener('mouseleave',release);
+  btn.addEventListener('touchend',release);btn.addEventListener('touchcancel',release);
+});
+
+// ─────────────────────────────────────────────
+//  BUTTONS
+// ─────────────────────────────────────────────
+const btnPlay  =document.getElementById('btn-play');
+const btnHud   =document.getElementById('btn-hud');
+const btnAuto  =document.getElementById('btn-auto');
+const btnSoundBtn=document.getElementById('btn-sound');
+const btnFs    =document.getElementById('btn-fs');
+
+let musicPlaying=false;
+function clearNowPlaying(){
+  trackBarEl.textContent='';
+  connectBar.style.display='none';
+}
+function setMusicBtn(playing){
+  musicPlaying=playing;
+  btnPlay.classList.add('active');
+  document.getElementById('play-icon').innerHTML=playing
+    ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    :'<path d="M8 5v14l11-7z"/>';
+  document.getElementById('lbl-play').textContent=playing?'停止':'再生';
+}
+
+btnPlay.addEventListener('click',()=>{
+  if(musicPlaying){
+    trackLoading=false;
+    if(radioActive){ radioAudio.pause(); return; }
+    if(ytReady&&ytPlayer){ ytPlayer.pauseVideo(); return; }
+    return;
+  }
+  if(isBrowsing){ confirmTrack(); return; }
+  if(radioActive){ radioAudio.play().catch(console.error); return; }
+  if(!ytReady||!ytPlayer||!trackWasConfirmed) return;
+  ytPlayer.playVideo();
+});
+
+function applyDisplayMode(){
+  connectBar.style.visibility=displayMode>=1?'hidden':'';
+  trackBarEl.style.visibility=displayMode>=2?'hidden':'';
+  hudEl.style.visibility=displayMode>=3?'hidden':'';
+  document.getElementById('crosshair').style.visibility=displayMode>=3?'hidden':'';
+  btnHud.classList.add('active');
+  const allHidden=displayMode===3;
+  document.getElementById('lbl-hud').textContent=allHidden?'表示':'非表示';
+  document.getElementById('hud-icon').innerHTML=allHidden
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/>';
+}
+btnHud.addEventListener('click',()=>{
+  displayMode=(displayMode+1)%4;
+  applyDisplayMode();
+});
+
+// ─────────────────────────────────────────────
+//  KEYBOARD CONTROLS (PC)
+// ─────────────────────────────────────────────
+(function(){
+  const kbHeld={}, kbT={};
+  function kbPress(dir){
+    if(kbHeld[dir]) return;
+    kbHeld[dir]=true;
+    if(dir==='up'){
+      selectTrack(-1);
+      kbT.upT=setTimeout(()=>{kbT.upI=setInterval(()=>selectTrack(-5),200);},500);
+    } else {
+      selectTrack(+1);
+      kbT.dnT=setTimeout(()=>{kbT.dnI=setInterval(()=>selectTrack(+5),200);},500);
+    }
+  }
+  function kbRelease(dir){
+    kbHeld[dir]=false;
+    if(dir==='up'){clearTimeout(kbT.upT);clearInterval(kbT.upI);kbT.upT=kbT.upI=null;}
+    else          {clearTimeout(kbT.dnT);clearInterval(kbT.dnI);kbT.dnT=kbT.dnI=null;}
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.repeat) return;
+    switch(e.key){
+      case 'ArrowUp':    e.preventDefault(); kbPress('up');   break;
+      case 'ArrowDown':  e.preventDefault(); kbPress('dn');   break;
+      case 'ArrowLeft':  e.preventDefault(); seekYT(-10);     break;
+      case 'ArrowRight': e.preventDefault(); seekYT(+10);     break;
+      case 'y': case 'Y': btnPlay.click();  break;
+      case 'a': case 'A': btnHud.click();   break;
+      case 'Escape': exitPlaylist(); break;
+    }
+  });
+  document.addEventListener('keyup',e=>{
+    if(e.key==='ArrowUp')   kbRelease('up');
+    if(e.key==='ArrowDown') kbRelease('dn');
+  });
+})();
+
+// ─────────────────────────────────────────────
+//  GAMEPAD CONTROLS
+// ─────────────────────────────────────────────
+(function(){
+  const prev={}, hold={};
+
+  function isDown(gp,idx){ const b=gp.buttons[idx]; if(!b) return false; return typeof b==='object'?b.pressed:!!b; }
+  function btnVal(gp,idx){ const b=gp.buttons[idx]; if(!b) return 0; return typeof b==='object'?b.value:(b?1:0); }
+
+  window._pollGamepad=function(){
+    const pads=navigator.getGamepads?navigator.getGamepads():[];
+    let gp=null;
+    for(let i=0;i<pads.length;i++){ if(pads[i]){gp=pads[i];break;} }
+    if(!gp) return;
+
+    // Left stick X → steering (yaw)
+    const stickX=gp.axes[0]||0;
+    if(Math.abs(stickX)>0.12) yaw-=stickX*0.03;
+
+    // Rising-edge buttons
+    function onPress(idx,fn){
+      const cur=isDown(gp,idx);
+      if(cur&&!prev[idx]) fn();
+      prev[idx]=cur;
+    }
+    onPress(3, ()=>btnPlay.click());   // Y / △  → play/confirm
+    onPress(0, ()=>btnHud.click());    // A / ×  → display toggle
+    onPress(8, exitPlaylist);          // Select → exit playlist
+    onPress(14,()=>seekYT(-10));       // D-pad left
+    onPress(15,()=>seekYT(+10));       // D-pad right
+
+    // RT(7)/LT(6) → speed
+    const spd=(btnVal(gp,7)-btnVal(gp,6))*1.5;
+    if(Math.abs(spd)>0.02){
+      speedSlider.value=Math.min(100,Math.max(0,+speedSlider.value+spd));
+      speedSlider.dispatchEvent(new Event('input'));
+    }
+
+    // D-pad up(12)/down(13) with hold-to-scroll
+    function dpadHold(idx,delta){
+      const cur=isDown(gp,idx);
+      const was=!!prev[idx];
+      if(cur&&!was){
+        selectTrack(delta);
+        hold[idx]=setTimeout(()=>{ hold['i'+idx]=setInterval(()=>selectTrack(delta<0?-5:5),200); },500);
+      } else if(!cur&&was){
+        clearTimeout(hold[idx]); clearInterval(hold['i'+idx]);
+        hold[idx]=hold['i'+idx]=null;
+      }
+      prev[idx]=cur;
+    }
+    dpadHold(12,-1);
+    dpadHold(13,+1);
+  };
+})();
+
+btnAuto.addEventListener('click',()=>{
+  autoPilot=!autoPilot;
+  btnAuto.classList.toggle('active',autoPilot);
+  hudAutoEl.style.display=autoPilot?'':'none';
+});
+
+btnSoundBtn.addEventListener('click',()=>{
+  konamiInput('sound');
+  soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
+});
+
+const btnRain = document.getElementById('btn-rain');
+const btnStar = document.getElementById('btn-star');
+btnRain.addEventListener('click', () => {
+  rainActive = !rainActive;
+  btnRain.classList.toggle('active', rainActive);
+});
+// 星&雲ボタン: なし(0)→星(1)→雲1(2)→雲2(3)→なし
+btnStar.addEventListener('click', () => {
+  skyDecoMode = (skyDecoMode + 1) % 4;
+  applySkyDeco();
+});
+applySkyDeco(); // 初期アイコン(星+雲・非アクティブ)を反映
+
+// btn-fs = 色モードボタン: 空(0)↔地平線(1)
+const fsIcon = document.getElementById('fs-icon');
+const CLOUD_PATH = '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>';
+const HORIZ_PATH = '<path d="M3 18h18M4 14l4-6 4 4 3-3 5 5"/>';
+function updateColorModeBtn(){
+  const isSky = skySliderMode===0;
+  fsIcon.innerHTML = isSky ? CLOUD_PATH : HORIZ_PATH;
+  fsIcon.setAttribute('fill', isSky ? 'currentColor' : 'none');
+  fsIcon.setAttribute('stroke', isSky ? 'none' : 'currentColor');
+  fsIcon.setAttribute('stroke-width', isSky ? '0' : '2');
+  document.getElementById('lbl-color').textContent = isSky ? '上空色' : '地平色';
+  btnFs.classList.add('active');
+}
+btnFs.addEventListener('click',()=>{
+  skySliderMode = skySliderMode===0 ? 1 : 0;
+  updateColorModeBtn();
+  syncSkySliders();
+});
+updateColorModeBtn();
+
+// 全画面: ダブルタップで toggle
+let fsState=0;
+function toggleFullscreen(){
+  if(fsState===0){
+    document.body.classList.add('screen-only');
+    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen)?.call(document.documentElement).catch(()=>{});
+    fsState=2;
+    try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(_){}
+    setTimeout(onResize,50);
+  } else {
+    exitScreenOnly();
+  }
+}
+function exitScreenOnly(){
+  if(fsState===0) return;
+  document.body.classList.remove('screen-only');
+  fsState=0;
+  try{ screen.orientation.unlock(); }catch(_){}
+  if(document.fullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen)?.call(document);}
+  setTimeout(onResize,50);
+}
+function onFsChange(){
+  if(!document.fullscreenElement){
+    if(fsState===2) document.body.classList.remove('screen-only');
+    fsState=0; setTimeout(onResize,50);
+  }
+}
+document.addEventListener('fullscreenchange',onFsChange);
+document.addEventListener('webkitfullscreenchange',onFsChange);
+wrapper.addEventListener('dblclick',()=>{ if(matchMedia('(pointer:fine)').matches) toggleFullscreen(); });
+
+// 説明ページ
+document.getElementById('explain-btn').addEventListener('click',()=>{
+  startOverlay.style.display='none';
+  document.getElementById('explain-panel').style.display='flex';
+});
+document.getElementById('explain-back-btn').addEventListener('click',()=>{
+  document.getElementById('explain-panel').style.display='none';
+  startOverlay.style.display='flex';
+});
+const lightbox=document.getElementById('lightbox');
+const lightboxImg=document.getElementById('lightbox-img');
+document.querySelectorAll('#explain-content img').forEach(img=>{
+  img.style.cursor='zoom-in';
+  let tapY=0;
+  img.addEventListener('touchstart',e=>{ tapY=e.touches[0].clientY; },{passive:true});
+  img.addEventListener('touchend',e=>{
+    if(Math.abs(e.changedTouches[0].clientY-tapY)<12){
+      e.preventDefault();
+      lightboxImg.src=img.src;
+      lightbox.style.display='flex';
+      lightbox.scrollTo(0,0);
+    }
+  },{passive:false});
+});
+let lbTapY=0;
+lightbox.addEventListener('touchstart',e=>{ lbTapY=e.touches[0].clientY; },{passive:true});
+lightbox.addEventListener('touchend',e=>{
+  if(Math.abs(e.changedTouches[0].clientY-lbTapY)<12){ e.preventDefault(); lightbox.style.display='none'; }
+},{passive:false});
+lightbox.addEventListener('click',()=>{ lightbox.style.display='none'; });
+
+// DRIVE START
+startBtn.addEventListener('click',()=>{
+  audioCtx.resume();
+  gameActive=true;
+  if(!gameStartTime){
+    gameStartTime=performance.now();totalPausedMs=0;pauseStartTime=null;cycleStartElapsed=0;
+    resetTrafficCars();
+  }
+  startOverlay.style.display='none';
+  playBgm('freeway1');
+  loadHeavyModels();
+});
+
+// ─────────────────────────────────────────────
+//  ANIMATION LOOP
+// ─────────────────────────────────────────────
+let lastT=performance.now();
+const _fVec=new THREE.Vector3();
+
+function getEffectiveYaw(){ return yaw; }
+
+function updateMovement(dt){
+  if(!gameActive) return;
+
+  const effYaw=getEffectiveYaw();
+  updateCruiseBgm();
+
+  cruiseSpeed=+speedSlider.value/100*MAX_CRUISE;
+
+  if(cruiseSpeed>0){
+    if(autoPilot){
+      camera.position.z-=cruiseSpeed*dt;
+      camera.position.x+=(AP_TARGET_X-camera.position.x)*Math.min(.5*dt,1);
+    } else {
+      _fVec.set(0,0,-1).applyEuler(new THREE.Euler(0,effYaw,0));
+      _fVec.y=0; _fVec.normalize();
+      camera.position.x+=_fVec.x*cruiseSpeed*dt;
+      camera.position.z+=_fVec.z*cruiseSpeed*dt;
+    }
+  }
+
+  camera.position.x=Math.max(PLAY_X_MIN+PLAYER_R,Math.min(PLAY_X_MAX-PLAYER_R,camera.position.x));
+  if(camera.position.z<=PLAY_Z_MIN){camera.position.z+=LOOP_LENGTH;handleLoopTransition();}
+
+  // Rock shake
+  const now2=performance.now(), dt2=Math.min((now2-shakeT0)/1000,.05); shakeT0=now2;
+  const onRocks=Math.abs(camera.position.x)>2.1, kmh=cruiseSpeed/MAX_CRUISE*120;
+  if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.625*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
+  else{shakePhase=0;pitchShake*=.85;}
+
+  camera.position.y=EYE_HEIGHT;
+  camera.rotation.set(pitch+pitchShake,effYaw,0);
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const now=performance.now(), dt=Math.min((now-lastT)/1000,.05); lastT=now;
+  const prevZ=camera.position.z;
+  updateMovement(dt);
+  playerZDeltaFrame=prevZ-camera.position.z;
+  if(playerZDeltaFrame<-LOOP_LENGTH/2)playerZDeltaFrame+=LOOP_LENGTH;
+  updateAllTrafficCars(dt);
+
+  for(const ring of mountainRings){
+    ring.position.x=camera.position.x; ring.position.z=camera.position.z;
+    ring.visible=!skyIsBlack;
+    // Grey base tinted toward a darkened horizon colour (keeps a visible silhouette)
+    _mtnTint.copy(skyHorizTarget).multiplyScalar(MTN_HORIZON_DARKEN);
+    ring.material.color.copy(ring.userData.baseGrey).lerp(_mtnTint,ring.userData.tint);
+  }
+  extDesertPlane.position.x=camera.position.x;
+
+  const sp=.025;
+  skyUniforms.topColor.value.lerp(skyTopTarget,sp);
+  skyUniforms.horizonColor.value.lerp(skyHorizTarget,sp);
+  skyUniforms.horizonBandColor.value.lerp(skyHorizBandTarget,sp);
+  scene.fog.color.lerp(GROUND_FOG_COLOR,sp);
+  skyMesh.position.copy(camera.position);
+
+  if(colorHudOn){
+    // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
+    // 「空#… 地平線#…」をmusiclistに手入力すれば3バーの見た目を再現できる。
+    colorHudEl.textContent='空#'+skyTopTarget.getHexString().toUpperCase()
+      +'　地平線#'+skyHorizTarget.getHexString().toUpperCase();
+  }
+
+  window._updateRain();
+  window._updateStars();
+  window._updateClouds(dt);
+  window._pollGamepad();
+
+  if(gameActive){
+    hudSpeedEl.textContent=Math.round(cruiseSpeed/MAX_CRUISE*120);
+  }
+
+  renderer.render(scene,camera);
+}
+
+onResize();
+animate();
+</script>
+</body>
+</html>

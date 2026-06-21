@@ -1,0 +1,207 @@
+ラジオ
+https://simul.drdi.st.nhk/live/3/joined/master.m3u8　「Radio,日本/NHK AM」
+https://simul.drdi.st.nhk/live/5/joined/audio/media.m3u8　「Radio,日本/NHK FM」
+https://bigrradio.cdnstream1.com/5182_128?listenerid=ea4ef9d7-dc2d-496b-9f18-5bbd5ca7923a&amp;cb=974096.mp3 「Radio,USA/Big R Radio-70s FM」
+https://stream1.rcast.net/72991 「Radio,USA/San Francisco's 70s HITS」
+https://classicrock.stream.laut.fm/classicrock 「Radio,Deutsch/Classic Rock」
+https://streams.cbnradio.com/news-128K?app=onlineradiobox 「Radio,USA/CBN News」
+https://www.ophanim.net:8444/s/9780 「Radio,USA/Side Street Radio」
+https://s4.radio.co/s44e9ca299/listen 「Radio,USA/Country Joy」
+https://streaming.live365.com/2158_128.mp3 「Radio,USA/Houston Blues Radio」
+https://streaming.live365.com/b75154_128mp3 「Radio,USA/Smooth Jazz 247」
+https://streams.cbnradio.com//southern-gospel-128K 「Radio,USA/CBN Southern Gospel」
+https://cdn.onlyhitsradio.net/tophits 「Radio,USA/Only Hits world」
+https://cdn.onlyhitsradio.net/onlyhits 「Radio,USA/Only Hits US Billboard」
+https://online.hitfm.ua/HitFM 「Radio,Ukraine/Хіт FM96.4」
+https://cdn.onlyhitsradio.net/japan 「Radio,USA/Only Hits Japan」
+https://cdn.onlyhitsradio.net/kpop_64 「Radio,USA/Only Hits K-Pop」
+https://listen.openstream.co/4457/audio 「Radio,France/ABC Lounge Radio」
+https://stream.zeno.fm/mpkpe4f0etzuv 「Radio,UK/The Hit Network Extra」
+https://stream.ginnet.cloud/live0119lo-p4rb/_definst_/fm1043/playlist.m3u8 「Radio,台湾/Gogo Radio FM 104.3(桃園)」
+https://stream.zeno.fm/g372rxef798uv 「Radio,India/Retro Bollywood」
+https://radio.avazfarsi.com:8000/radio.mp3「Radio,Iran(USA)/Radio AvazFarsi」
+https://classic-radio.stream.laut.fm/classic-radio 「Radio,Deutsch/Classic Radio」
+https://media-ssl.musicradio.com/ClassicFM 「Radio,UK/Classic FM」
+
+Music
+プレイリスト「カントリーロック・西海岸」
+プレイリスト「テキサス」
+プレイリスト「フロンティア」
+https://www.youtube.com/watch?v=EPSzkpNucV8   「Dooley Wilson,As Time Goes By (1942)」#d3dbdb
+https://www.youtube.com/watch?v=KaFtsqU2V6U	　「Nat King Cole,Too Young (1951)」	#0099ff
+https://www.youtube.com/watch?v=purfXvu24Ps	　「Chet Baker,You Don't Know What Love Is (1953)」#a1d1b6　雨
+https://www.youtube.com/watch?v=eAUOqv1mp58   「Joe Derise,How Long Has This Been Going On (1955)」 音量+10%
+https://www.youtube.com/watch?v=B2YwGBVSfFQ   「Elvis Presley,Don't Be Cruel (1956)」#62f0f0
+https://www.youtube.com/watch?v=-9dtQzg7gDM   「Elvis Presley,Love Me Tender (1956)」#d8f2a5
+https://www.youtube.com/watch?v=pGDh3rVWuMQ   「Paul Anka,Diana (1957)」
+https://www.youtube.com/watch?v=k7fihig4u0Y   「Paul Anka,You Are My Destiny (1958)」
+https://www.youtube.com/watch?v=Y-9Y4CCIWnM   「Chuck Berry,Johnny Be Goode (1958)」#faca1e
+https://www.youtube.com/watch?v=vGJTaP6anOU   「Elvis Presley,Can't Help Falling In Love (1961)」#cbb0e8
+https://www.youtube.com/watch?v=dY6CnR5-pAI 　「Willie Nelson,Crazy (1962)」	#0099ff　地平線#33ccff  音量-13%
+https://www.youtube.com/watch?v=oxwAB3SECtc   「The Beatles,I Saw Her Standing There (1963)」
+https://www.youtube.com/watch?v=_bGSkQpV6cM   「Hank Mobley,Carolyn (1963)」
+https://www.youtube.com/watch?v=3KFvoDDs0XM   「Roy Orbison,Oh Pretty Woman (1964)」
+https://www.youtube.com/watch?v=JYuyWrkwpok	　「Frank Sinatra,Fly Me To The Moon (1964)」	#0099ff
+https://www.youtube.com/watch?v=IA2eK1pcvM8	　「THE MAMAS & THE PAPAS,California Dreamin (1965)」	#0099ff　地平線#66ffcc
+https://www.youtube.com/watch?v=Sek1vLw3s20	　「Frank Sinatra,Strangers In The Night (1966)」	#0099ff
+https://www.youtube.com/watch?v=dVA-1iJxRQI   「Simon & Garfunkel,A Hazy Shade of Winter (1966)」#fadbca
+https://www.youtube.com/watch?v=6gluNoLVKiQ   「The Beatles,Eleanor Rigby (1966)」#fa91af
+https://www.youtube.com/watch?v=44GB53rnI3c   「The Beatles,Strawberry Fields Forever (1967)」#fa91af　地平線#d60d46
+https://www.youtube.com/watch?v=jKU74Uns9_0	　「The Doors,Light My Fire (1967)」	#ff0033  地平線#ffff33
+https://www.youtube.com/watch?v=AgHaGrZkkv4	　「The Doors,People Are Strange  (1967)」	#ff0099
+https://www.youtube.com/watch?v=FFqb1I-hiHE	　「The Band,The Weight (1968)」	#0099ff　地平線#ffff66
+https://www.youtube.com/watch?v=igvP806798U	　「Steppenwolf,Born To Be Wild (1968)」	#0099ff　地平線#ff0099
+https://www.youtube.com/watch?v=KThbNtVCFs4	　「Elvis Presley,A Little Less Conversation (1968)」	
+https://www.youtube.com/watch?v=iYYRH4apXDo	　「David Bowie,Space Oddity (1969)」	 音量+10%
+https://www.youtube.com/watch?v=oVW6wJ7MYDM   「The Beatles,Come Together (1969)」
+https://www.youtube.com/watch?v=j_JaDDcyIIU   「The Beatles,Yellow Submarine (1969)」#ffeb0a
+https://www.youtube.com/watch?v=N9JN4aqMduo   「Jerry Wallace,Lovers Of The World マンダム～男の世界 (1970)」#edcc68　地平線#91afc7
+https://www.youtube.com/watch?v=37dw2r45Xzg	　「Leon Russell,Song For You (1970)」	#c98c2a　地平線#b1c92a
+https://www.youtube.com/watch?v=ymAlU3ImKxA	　「Herbie Hancock,Cat Call (1970)」	#817491　地平線#c92aaa
+https://www.youtube.com/watch?v=4G-YQA_bsOU   「Simon & Garfunkel,Bridge Over Troubled Water (1970)」
+https://www.youtube.com/watch?v=u1V8YRJnr4Q   「Creedence Clearwater Revival,Have You Ever Seen The Rain (1970)」 雨
+https://www.youtube.com/watch?v=Wh2kwpnQu6c   「John Denver,Take Me Home Country Roads (1971)」
+https://www.youtube.com/watch?v=VkKxmnrRVHo	　「Carole King,It's Too Late(1971)」	
+https://www.youtube.com/watch?v=7ll7ocQbH_k	　「Al Green,Tired of Being Alone(1971)」	
+https://www.youtube.com/watch?v=oy_-_JgXA1A	　「Leon Russell,This Masquerade (1972)」	#ffff00
+https://www.youtube.com/watch?v=j5RuCEhHcG4	　「John Lennon,Woman Is The Nigger Of The World (1972)」	
+https://www.youtube.com/watch?v=5igDtWadYms	　「Eagles,Take it Easy (1972)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=UQ01tkS8nhU	　「Stephen Stills,Song of Love (1972)」	#0099ff
+https://www.youtube.com/watch?v=t365MuktYQs	　「David Bowie,Starman (1972)」#000000　星 地平線#ffcc00
+https://www.youtube.com/watch?v=F8NKmP-ptfQ	　「Elton John,The Ballad Of Danny Bailey (1909-1934) (1973)」	
+https://www.youtube.com/watch?v=fPMoLEjM_K4	　「Barry White,Can't Get Enough Of Your Love, Babe (1974)」	
+https://www.youtube.com/watch?v=gIbkqGZtMT4	　「Elton John,I've Seen The Saucers (1974)」	#75d9af
+https://www.youtube.com/watch?v=S_JeuGdXl5o	　「Roberta Flack,Feel Like Makin' Love(1974)」	
+https://www.youtube.com/watch?v=2ZBtPf7FOoM   「Queen,Killer Queen(1974)」
+https://www.youtube.com/watch?v=fXjzloT4y-0   「10cc,I'm Not in Love(1975)」  音量-15%
+https://www.youtube.com/watch?v=Zu9a29UR2dU	　「Earth, Wind & Fire,Shining Star(1975)」	#c4edb9
+https://www.youtube.com/watch?v=F5LkGKJDc3Q 　「Billy Joel,New York State of Mind (1976)」#1c67fc
+https://www.youtube.com/watch?v=jjLSJWhGmmA	　「Boz Scaggs,We're All Alone (1976)」	#c27467
+https://www.youtube.com/watch?v=qbmWs6Jf5dc   「Sex Pistols,Anarchy In The UK (1976)」
+https://www.youtube.com/watch?v=YkLLcIKhJ64   「ABBA,Dancing Queen (1976)」
+https://www.youtube.com/watch?v=gVSwBW0zA_o	　「Dexter Gordon,Laura (1977)」	
+https://www.youtube.com/watch?v=MGzPlbwwnLY	　「Bee Gees,How Deep Is Your Love (1977)」	#9933cc
+https://www.youtube.com/watch?v=SkypZuY6ZvA	　「Bee Gees,Night Fever (1977)」	#3300cc　星　地平線#e39666
+https://www.youtube.com/watch?v=fNFzfwLM72c	　「Bee Gees,Stayin' Alive (1977)」	#ff6666
+https://www.youtube.com/watch?v=E5ofVsxTPoc	　「Billy Joel,The Stranger (1977)」	#5f0cad
+https://www.youtube.com/watch?v=dLl4PZtxia8	　「Eagles,Hotel California (1977)」	#ff6666　地平線#ff9933
+https://www.youtube.com/watch?v=XTtopI620ZU　 「Elvis Costello,Alison (1977)」
+https://www.youtube.com/watch?v=2T7TXVtGGFc	　「Yellow Magic Orchestra, Tong Poo (1978)」	
+https://www.youtube.com/watch?v=WGU_4-5RaxU	　「Blondie,Heart Of Glass (1978)」	#0099ff
+https://www.youtube.com/watch?v=Fo6aKnRnBxM	　「Gerry Rafferty,Baker Street(1978)」	
+https://www.youtube.com/watch?v=rpuPCcw-cDU	　「CHIC,I Want Your Love(1978)」	
+https://www.youtube.com/watch?v=YSOACab2t7k	　「Kate Bush,Moving(1978)」	#892de0　星　地平線#21cf95
+https://www.youtube.com/watch?v=YSOACab2t7k	　「Kate Bush,Moving (1978)」	
+https://www.youtube.com/watch?v=0c9s70yytYE   「Pet Shop Boys,Go West (1979)」
+https://www.youtube.com/watch?v=I248-SyRDnU	　「Bee Gees,Tragedy (1979)」	
+https://www.youtube.com/watch?v=9PnXcP8ZI7M	　「Christopher Cross,Sailing (1979)」	#29a0e6　地平線#494ff5
+https://www.youtube.com/watch?v=LrjHz5hrupA	　「Elvis Costello & The Attractions,Oliver's Army (1979)」	
+https://www.youtube.com/watch?v=W8r-tXRLazs	　「The Buggles,Video Killed The Radio Star (1979)」	#66ff00
+https://www.youtube.com/watch?v=OAC4ItP0xWM   「Lipps Inc.,Funkytown (1979)」
+https://www.youtube.com/watch?v=cLi8fTlDEag	　「Olivia Newton-John,Xanadu (1980)」	#ff9900　地平線#de33ca　星
+https://www.youtube.com/watch?v=l37pDbFNcT0	　「Olivia Newton-John,magic (1980)」	#000000　星 音量+18%　地平線#e37dd2
+https://www.youtube.com/watch?v=8ifjLdWj4y0	　「Frank Sinatra,Theme From New York. New York  (1980)」	#0099ff
+https://www.youtube.com/watch?v=dBN86y30Ufc	　「Willie Nelson,On The Road Again (1980)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=uVXR2LYeFBI	　「John Lennon,WATCHING THE WHEELS (1980)」	#55b7c2
+https://www.youtube.com/watch?v=Uw5OLnN7UvM	　「Bill Withers,Just The Two Of Us (1980)」	
+https://www.youtube.com/watch?v=vWz9VN40nCA	　「Olivia Newton-John,Physical (1981)」	#0099ff 地平線#ffd500
+https://www.youtube.com/watch?v=Kb7lAMjFuA0   「Toto,Africa (1982)」
+https://www.youtube.com/watch?v=1A0MPWseJIE   「Chicago,Hard To Say I'm Sorry (1981)」 
+https://www.youtube.com/watch?v=-EjTRx64hFQ	　「Dan Hill,It's A Long Road (1982)」	
+https://www.youtube.com/watch?v=miAawzeIzgE	　「Vangelis,Blade Runner (End Titles) (1982)」	#660066　雨
+https://www.youtube.com/watch?v=btPJPFnesV4	　「Survivor,Eye Of The Tiger (1982)」	#0099ff
+https://www.youtube.com/watch?v=Ueivjr3f8xg	　「Donald Fagen,I.G.Y. (1982)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=Ueivjr3f8xg	　「Donald Fagen,I.G.Y. (1982)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=Dtrgwqei7ww	　「Gazebo,I Like Chopin (1983)」	#ff66cc
+https://www.youtube.com/watch?v=SVOuYquXuuc	　「YES,Owner of a Lonely Heart (1983)」	#3366ff
+https://www.youtube.com/watch?v=VbD_kBJc_gI	　「David Bowie,Let's Dance (1983)」	#ffc800　地平線#6caad9
+https://www.youtube.com/watch?v=Zi_XLOBDo_Y   「Michael Jackson,Billie Jean (1983)」
+
+https://www.youtube.com/watch?v=izGwDsrQ1eQ	　「George Michael,Careless Whisper (1984)」	
+https://www.youtube.com/watch?v=JkRKT6T0QLg	　「Philip Bailey & Phil Collins,Easy Lover (1984)」	
+https://www.youtube.com/watch?v=4TYv2PhG89A	　「Sade,Smooth Operator (1984)」	#cc99ff　地平線#bf243e
+https://www.youtube.com/watch?v=kxNJV83EMJw	　「Sade,Hang On To Your Love (1984)」	
+https://www.youtube.com/watch?v=2WN0T-Ee3q4	　「Limahl,Never Ending Story (1984)」	#ff00cc　星 音量+15%　地平線#3b0d5e
+https://www.youtube.com/watch?v=NIML4qW8-D0   「Madonna,Like a Virgin (1984)」
+https://www.youtube.com/watch?v=EPhWR4d3FJQ	　「Bruce Springsteen,Born in the U.S.A. (1984)」	#3399cc　地平線#66ffff
+https://www.youtube.com/watch?v=Fe93CLbHjxQ   「Ray Parker.Jr,Ghostbusters(1984)」#0239eb
+https://www.youtube.com/watch?v=pbU0gfyYnRA   「Vince DiCola,♪Training Montage～Rocky IV～(1985)」　開始13秒
+https://www.youtube.com/watch?v=bWb6MJ_lTPw	　「Maurice White,I Need You (1985)」#c73a3a　地平線#64c73a
+https://www.youtube.com/watch?v=djV11Xbc914	　「a-ha,Take On Me (1985)」	
+https://www.youtube.com/watch?v=bgmMpT_m-t4	　「Stevie Wonder,Part-Time Lover (1985)」	
+https://www.youtube.com/watch?v=c5BL4RNFr58	　「James Brown,Living in America (1985)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=mIqhl0rH0Wc   「USA For Arica,We Are The World (1985)」#6eebe0
+https://www.youtube.com/watch?v=TeaKAB-IxOE   「Elsa,T'en Va Pas(1986)」
+https://www.youtube.com/watch?v=siwpn14IE7E	　「Kenny Loggins,Danger Zone (1986)」	
+https://www.youtube.com/watch?v=Bx51eegLTY8	　「Berlin,Take My Breath Away (1986)」	#0099ff
+https://www.youtube.com/watch?v=G2zxzaWgVRA   「Sarah Brightman & Steve Harley,The Phantom Of The Opera (1986)」
+https://www.youtube.com/watch?v=di60NYGu03Y　 「Pet Shop Boys,Opportunities (1986)」
+https://www.youtube.com/watch?v=9erLsEHAZRI   「Guns'n Roses,Welcome to the Jungle (1987)」	
+https://www.youtube.com/watch?v=uCGD9dT12C0	　「Fleetwood Mac,Little Lies(1987)」	
+https://www.youtube.com/watch?v=LTrk4X9ACtw   「Enya,Orinoco Flow (1988)」
+https://www.youtube.com/watch?v=kaJRvZZBnX8	　「Elton John,I Don't Wanna Go On With You Like That (1988)」	
+https://www.youtube.com/watch?v=PSoOFn3wQV4	　「The Bangles,Eternal Flame (1988)」	
+https://www.youtube.com/watch?v=hPPS0_rqwcw	　「Jevetta Steele,Calling You (1988)」	#993366
+https://www.youtube.com/watch?v=zLStJs4BK6M	　「CHAGE and ASKA,Pride (1989)」	#66ccff 音量+15%
+https://www.youtube.com/watch?v=VAtGOESO7W8	　「Tears For Fears,Sowing The Seeds Of Love (1989)」	#6600ff 地平線#ff00ff
+https://www.youtube.com/watch?v=Qt2mbGP6vFI	　「Phil Collins,Another Day In Paradise (1989)」	#990066　地平線#ff9933 音量+15%
+https://www.youtube.com/watch?v=OAwaNWGLM0c   「Janet Jackson,Rhythm Nation1814 (1989)」
+https://www.youtube.com/watch?v=RJgBpjo7dpY　 「Elvis Costello,I Hope You're Happy Now (1989)」
+https://www.youtube.com/watch?v=FTBWiUkR69w	　「The Kentucky Headhunters,Dumas Walker (1990)」	#0099ff　地平線#33ccff
+https://www.youtube.com/watch?v=JVuuatjHGnY	　「Lisa Stansfield,All Around the World(1990)」	
+https://www.youtube.com/watch?v=T5vdZKGiDiE   「Enya,Caribbean Blue  (1991)」
+https://www.youtube.com/watch?v=u-t9J-gQ-mY	　「Sting,Come Down In Time (1991)」	#8f6113
+https://www.youtube.com/watch?v=I7mI-HYHDbM	　「Elton John,Understanding Women (1992)」	#ff3300
+https://www.youtube.com/watch?v=85B_REWeNcM　 「Elton John,The One (1992)」#ab2ec7　地平線#b7ff73
+https://www.youtube.com/watch?v=d2FUj5A80gs	　「Elton John,Runaway Train ft. Eric Clapton (1992)」	#6666ff
+https://www.youtube.com/watch?v=xwmzX-tc6lg	　「ZARD,IN MY ARMS TONIGHT (1992)」	
+https://www.youtube.com/watch?v=F_pX-O-CR6Q	　「Valensia,Scaraboushka (1993)」	#ba66ff　地平線#7366ff
+https://www.youtube.com/watch?v=8LhCd1W2V0Q   「Lenny Kravitz,Are You Gonna Go My Way (1993)」
+https://www.youtube.com/watch?v=spPWnh3JvZ0   「Lenny Kravitz,Believe (1993)」
+https://www.youtube.com/watch?v=NPcyTyilmYY　 「Alanis Morissette,You Oughta Know (1995)」
+https://www.youtube.com/watch?v=IWxK3sNwjDw	　「Sarah Brightman,A Question Of Honour (1995)」	
+https://www.youtube.com/watch?v=FXkZhnMm1UU	　「KOJI1200,Now Romantic (1995)」	#e09bd8
+https://www.youtube.com/watch?v=Aet5u3OWZNQ	　「柳ジョージ,バーニング (1996)」	#ff0000
+https://www.youtube.com/watch?v=xGyXVadz4CI	　「Pet Shop Boy,Discoteca (1996)」	#ffff33　地平線#ff3333
+https://www.youtube.com/watch?v=GozdIQx1Wow	　「LeAnn Rimes,Blue  (1996)」	#00ffff
+https://www.youtube.com/watch?v=fBc1h7Kbc4I   「Alan Parsons,Too Close to the Sun (1996)」
+https://www.youtube.com/watch?v=wRtmC5wQBe0	　「The Rolling Stones,Anybody Seen My Baby (1997)」	
+https://www.youtube.com/watch?v=dbm1dWfZej8	　「The Rolling Stones,Flip The Switch (1997)」	
+https://www.youtube.com/watch?v=VfzYn344gVw	　「Eric Clapton,My father`s eyes (1998)」	#0099ff
+https://www.youtube.com/watch?v=5pijgBeaSEU   「THE YELLOW MONKEY,BURN (1998)」#f00c0c　地平線#f0910c
+https://www.youtube.com/watch?v=fEfvTTJNeAY   「Britney Jean Spears,...Baby One More Time(1998)」#300f2b　地平線#f0910c
+https://www.youtube.com/watch?v=xnEYzp6IpqQ	　「Snoop Dogg,Smoke Weed Everyday (1999)」	
+https://www.youtube.com/watch?v=B1U_DYYBxgg   「Ring,Process (1999)」	
+https://www.youtube.com/watch?v=2AB-ieB0sTg   「Bon Jovi,It's My Life (2000)」
+https://www.youtube.com/watch?v=FGBhQbmPwH8   「Daft Punk,One More Time (2001)」
+https://www.youtube.com/watch?v=YVkUvmDQ3HY	　「Eminem,Without Me (2002)」	
+https://www.youtube.com/watch?v=0HL-N9oOjcs   「t.A.T.u.,Not Gonna Get Us (2002)」
+https://www.youtube.com/watch?v=ViwtNLUqkMY   「Beyoncé,Crazy In Love ft. JAY Z (2003)」	
+https://www.youtube.com/watch?v=tbj-tDP4ZKM	　「Sean Lennon,Wait For Me (2006)」	#6600ff　音量+15%
+https://www.youtube.com/watch?v=JuYKC28H-x0	　「Sean Lennon,Parachute (2006)」　音量+15%
+https://www.youtube.com/watch?v=lqYIU4ww3Ak	　「Sean Lennon,Falling Out Of Love (2006)」	#cc00ff　音量+15%
+https://www.youtube.com/watch?v=bESGLojNYSo　 「Lady Gaga,Poker Face (2008)」
+https://www.youtube.com/watch?v=5bOkWTprifg	　「Michael Jackson,Behind the Mask (2010)」	
+https://www.youtube.com/watch?v=UjpbQ1OWMPE	　「M83,Oblivion (feat Susanne Sundfør)(2013)」	#0fc8d9 　地平線#1a1c1c
+https://www.youtube.com/watch?v=5NV6Rdv1a3I   「Daft Punk,Get Lucky (2013)」
+https://www.youtube.com/watch?v=nfWlot6h_JM　 「Taylor Swift,Shake It Off (2014)」
+https://www.youtube.com/watch?v=4zAThXFOy2c   「Chris Stapleton,Tennessee Whiskey (2015)」
+https://www.youtube.com/watch?v=tvTRZJ-4EyI　 「Kendrick Lamar,HUMBLE. (2017)」
+https://www.youtube.com/watch?v=JGwWNGJdvx8　 「Ed Sheeran,Shape of You (2017)」#0073ff
+https://www.youtube.com/watch?v=k2qgadSvNyU　 「Dua Lipa,New Rules (2017)」#aed433
+https://www.youtube.com/watch?v=pygwK0sBUdM	　「坂本龍一,andata (2017)」	#68b09d　単色　雨　地平線#0099cc
+https://www.youtube.com/watch?v=tm6x0q2INSs　 「Benny Sings,Not Enough (2018)」
+https://www.youtube.com/watch?v=jNoy4v0YgzU　 「The Japanese House,You Seemed So Happy (2019)」
+https://www.youtube.com/watch?v=2fD9TBKHAdE	　「Cyberpunk 2077,Militech Combat Theme (2020)」	#610052
+https://www.youtube.com/watch?v=_7TYdoOORS8   「Haiva Ru,Swim (2020)」
+https://www.youtube.com/watch?v=oygrmJFKYZY　 「Dua Lipa,Don't Start Now (2020)」#f24444
+https://www.youtube.com/watch?v=TUVcZfQe-Kw　 「Dua Lipa,Levitating Featuring DaBaby (2020)」
+https://www.youtube.com/watch?v=RsW66teC0BQ　 「Doja Cat,Boss Bitch (2020)」#fffb00
+https://www.youtube.com/watch?v=3aTpjiBT3p8　 「20Syl,Quem Manda No Mic (2020)」
+https://www.youtube.com/watch?v=YHz0KYb7wV8　 「Jessie Ware,Mirage (Don’t Stop) (2020)」
+https://www.youtube.com/watch?v=TMQeYF_xOxE   「David Ferguson,The Housebuilding Song (2021)」
+https://www.youtube.com/watch?v=hCkTyEsCNL4　 「Charlotte Adigéry,High Lights (2022)」
+https://www.youtube.com/watch?v=Rbgw_rduQpM　 「Rosa Walton,I Really Want to Stay at Your House (2022)」
+https://www.youtube.com/watch?v=U5r4S4YjkF8   「The Smile,A Hairdryer (2022)」#7af5b6　地平線#00ff7c
+https://www.youtube.com/watch?v=ekauErew4Bs　 「Rina Sawayama,This Hell (2022)」
+https://www.youtube.com/watch?v=RlPNh_PBZb4　 「Olivia Rodrigo,vampire (2023)」
