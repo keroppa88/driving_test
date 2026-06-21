@@ -1334,8 +1334,10 @@ const COURSE_LAYOUT = [
 // Result, seen from above: a 3×3 grid of square tiles with the centre cell
 // (grid 1,0 after centring → world origin) left blank.
 
-// Normalise a loaded tile so it lies flat on the ground (XZ plane), is
-// centred on its own origin and fills exactly one COURSE_CELL square.
+// Normalise a loaded tile, centring it on its own origin and scaling it to
+// exactly one COURSE_CELL square. The source geometry already lies flat in
+// the XZ plane (vertices have Y=0 and span X/Z), so NO X-axis tilt is applied
+// — only an optional Y-axis rotation for the course layout.
 function makeCourseTile(src, yRot){
   const obj = src.clone(true);
   obj.traverse(c=>{ if(!c.isMesh) return; c.frustumCulled=false;
@@ -1348,10 +1350,9 @@ function makeCourseTile(src, yRot){
   const cen  = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
   obj.position.sub(cen);                          // centre tile on origin (tile space)
-  const flat = new THREE.Group();                 // lay flat: tile +Y(north) → world +Z
+  const flat = new THREE.Group();                 // already flat in XZ — no tilt
   flat.add(obj);
-  flat.rotation.x = -Math.PI/2;
-  flat.scale.setScalar(COURSE_CELL / Math.max(size.x, size.y));
+  flat.scale.setScalar(COURSE_CELL / Math.max(size.x, size.z));
   const pivot = new THREE.Group();                // course rotation about world Y
   pivot.add(flat);
   pivot.rotation.y = yRot;
