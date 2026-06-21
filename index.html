@@ -1324,12 +1324,12 @@ const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 const TILE_SRC = 2139194.5;
 // [ source tile, gridCol, gridRow, yRotation ]
 // Bottom-left corner of each tile is anchored at (col*CELL, row*CELL).
-// Stack upward (−Z): 01 corner at (0,0) → its top edge (z=-CELL) meets 00's
-// bottom edge → 00's top edge meets the next 01's bottom edge.
+// "Forward / up the map" is +Z, so the column stacks toward +Z: 01 corner at
+// (0,0) spans z[0,40] → 00 on top (z[40,80]) → 01 on top (z[80,120]).
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0,  0, RL90],   // corner at (0,0),   spans z[-40,  0] — bottom 01 (screen bottom), left 90°
-  ['map00.gltf', 0, -1, R0  ],   // corner at (0,-40), spans z[-80,-40]
-  ['map01.gltf', 0, -2, R0  ],   // corner at (0,-80), spans z[-120,-80]
+  ['map01.gltf', 0, 0, RL90],   // corner at (0,0),  spans z[0,40]   — bottom 01, left 90°
+  ['map00.gltf', 0, 1, R0  ],   // spans z[40,80]
+  ['map01.gltf', 0, 2, R0  ],   // spans z[80,120]
 ];
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
@@ -1343,14 +1343,13 @@ function makeCourseTile(src, yRot){
       mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true; };
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
   });
-  // Geometry spans x∈[0,TILE_SRC], z∈[-TILE_SRC,0]. Centre it on the tile
-  // origin so the Y-rotation pivots about the tile centre (the tile stays in
-  // its cell when rotated). The pivot is positioned at the CELL CENTRE by
-  // buildLoopCourse, which keeps the unrotated bottom-left corner aligned to
-  // the grid point.
+  // Centre the geometry on the tile origin, then flip Z (rotate π about X,
+  // staying flat in XZ) so the tile's bottom edge (下辺) faces −Z and the top
+  // edge (上辺) faces +Z. This makes "forward / up the map" = +Z (positive).
   obj.position.set(-TILE_SRC/2, 0, TILE_SRC/2);
-  const flat = new THREE.Group();                 // already flat in XZ — no tilt
+  const flat = new THREE.Group();
   flat.add(obj);
+  flat.rotation.x = Math.PI;                       // flip Z; tile stays flat in XZ
   flat.scale.setScalar(COURSE_CELL / TILE_SRC);
   const pivot = new THREE.Group();                // course rotation about tile centre
   pivot.add(flat);
@@ -1363,10 +1362,10 @@ const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
 // Centre of the stacked column (for start position and top-down view).
 const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
-const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
+const COURSE_CENTER_Z = COURSE_CELL * 1.5;          // = 60 (middle of z[0,120])
 // Vehicle start: on the middle (00) tile.
 const START_X = COURSE_CENTER_X;
-const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
+const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=60
 
 function buildLoopCourse(){
   const sources = {};
@@ -1383,9 +1382,9 @@ function buildLoopCourse(){
       if(!src) continue;
       const tile = makeCourseTile(src, yRot);
       // Place at the CELL CENTRE so the (unrotated) bottom-left corner lands on
-      // the grid point (col*CELL, row*CELL); the cell spans +X and -Z from there.
+      // the grid point (col*CELL, row*CELL); the cell spans +X and +Z from there.
       tile.position.set(col*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X, COURSE_Y,
-                        row*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z);
+                        row*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_Z);
       course.add(tile);
     }
     scene.add(course);
@@ -1851,10 +1850,11 @@ function updateMovement(dt){
     if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
     scene.fog.density=0;                 // clear haze so the whole map is visible
     camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
-    camera.rotation.set(-Math.PI/2,0,0);
+    camera.up.set(0,0,1);                 // +Z points up on screen (forward/up = +Z)
+    camera.lookAt(COURSE_CENTER_X,0,COURSE_CENTER_Z);
     return;
   }
-  if(_savedFogDensity!==null){ scene.fog.density=_savedFogDensity; _savedFogDensity=null; }
+  if(_savedFogDensity!==null){ scene.fog.density=_savedFogDensity; _savedFogDensity=null; camera.up.set(0,1,0); }
 
   const effYaw=getEffectiveYaw();
   updateCruiseBgm();
