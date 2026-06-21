@@ -1323,13 +1323,14 @@ const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
 const TILE_SRC = 2139194.5;
 // [ source tile, gridCol, gridRow, yRotation ]
-// Bottom-left corner of each tile is anchored at (col*CELL, row*CELL).
-// "Forward / up the map" is +Z, so the column stacks toward +Z: 01 corner at
-// (0,0) spans z[0,40] → 00 on top (z[40,80]) → 01 on top (z[80,120]).
+// Front-left corner anchored at (col*CELL, row*CELL); the cell extends +X
+// (right) and −Z (奥/away). Tiles are placed AS-IS (no auto rotation). The
+// near edge (下辺/手前) faces +Z, the far edge (上辺/奥) faces −Z, so the
+// column stacks toward −Z: 01 → 00 → 01.
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0, 0, RL90],   // corner at (0,0),  spans z[0,40]   — bottom 01, left 90°
-  ['map00.gltf', 0, 1, R0  ],   // spans z[40,80]
-  ['map01.gltf', 0, 2, R0  ],   // spans z[80,120]
+  ['map01.gltf', 0,  0, R0],   // 下辺(手前) at (0,0); spans z[-40,0]
+  ['map00.gltf', 0, -1, R0],   // spans z[-80,-40]
+  ['map01.gltf', 0, -2, R0],   // spans z[-120,-80]
 ];
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
@@ -1343,13 +1344,11 @@ function makeCourseTile(src, yRot){
       mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true; };
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
   });
-  // Centre the geometry on the tile origin, then flip Z (rotate π about X,
-  // staying flat in XZ) so the tile's bottom edge (下辺) faces −Z and the top
-  // edge (上辺) faces +Z. This makes "forward / up the map" = +Z (positive).
+  // Centre the geometry on the tile origin. NO extra flip/rotation — the tile
+  // is placed exactly as authored (手前=下辺, 奥=上辺, road exits 下辺→右辺).
   obj.position.set(-TILE_SRC/2, 0, TILE_SRC/2);
   const flat = new THREE.Group();
   flat.add(obj);
-  flat.rotation.x = Math.PI;                       // flip Z; tile stays flat in XZ
   flat.scale.setScalar(COURSE_CELL / TILE_SRC);
   const pivot = new THREE.Group();                // course rotation about tile centre
   pivot.add(flat);
@@ -1362,10 +1361,10 @@ const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
 // Centre of the stacked column (for start position and top-down view).
 const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
-const COURSE_CENTER_Z = COURSE_CELL * 1.5;          // = 60 (middle of z[0,120])
+const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
 // Vehicle start: on the middle (00) tile.
 const START_X = COURSE_CENTER_X;
-const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=60
+const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
 
 function buildLoopCourse(){
   const sources = {};
@@ -1384,7 +1383,7 @@ function buildLoopCourse(){
       // Place at the CELL CENTRE so the (unrotated) bottom-left corner lands on
       // the grid point (col*CELL, row*CELL); the cell spans +X and +Z from there.
       tile.position.set(col*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X, COURSE_Y,
-                        row*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_Z);
+                        row*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z);
       course.add(tile);
     }
     scene.add(course);
@@ -1849,10 +1848,10 @@ function updateMovement(dt){
   if(topView){
     if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
     scene.fog.density=0;                 // clear haze so the whole map is visible
-    // View from BELOW looking up: with up=+Z this gives +Z up AND +X right
-    // (a true map/plot orientation). Tiles are double-sided so visible.
-    camera.position.set(COURSE_CENTER_X,-TOPVIEW_HEIGHT,COURSE_CENTER_Z);
-    camera.up.set(0,0,1);
+    // Honest top-down from ABOVE. up=-Z puts 奥(−Z) at the top of the screen
+    // and +X (右辺) on the right — the orientation a real overhead view gives.
+    camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
+    camera.up.set(0,0,-1);
     camera.lookAt(COURSE_CENTER_X,0,COURSE_CENTER_Z);
     return;
   }
