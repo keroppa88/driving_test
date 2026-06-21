@@ -1895,7 +1895,7 @@ function updateMovement(dt){
     }
   }
 
-  camera.position.x=Math.max(PLAY_X_MIN+PLAYER_R,Math.min(PLAY_X_MAX-PLAYER_R,camera.position.x));
+  // X-axis movement is no longer clamped — the player can move freely on X.
   if(camera.position.z<=PLAY_Z_MIN){camera.position.z+=LOOP_LENGTH;handleLoopTransition();}
 
   // Rock shake
