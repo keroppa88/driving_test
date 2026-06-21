@@ -1320,22 +1320,17 @@ const COURSE_Y    = 0.0;           // height of the road surface
 // Y-rotation about the vertical axis: in three.js +π/2 turns North(+Z)→East(+X)
 // (a "right"/clockwise turn seen from above), −π/2 turns North→West ("left").
 const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
+// Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
+const TILE_SRC = 2139194.5;
 // [ source tile, gridCol, gridRow, yRotation ]
-// Rotations chosen so each tile's road meets both of its loop neighbours.
-// Native edges (after centring): map00 straight = +Z↔-Z; map01 corner = +Z(bottom)↔+X(right).
-// Y-rotation maps: R90 sends +X→-Z,+Z→+X; R180 negates; RL90 sends +X→+Z,+Z→-X.
+// Bottom-left corner of each tile is anchored at (col*CELL, row*CELL).
+// Stack upward (−Z): 01 corner at (0,0) → its top edge (z=-CELL) meets 00's
+// bottom edge → 00's top edge meets the next 01's bottom edge.
 const COURSE_LAYOUT = [
-  ['map00.gltf', 0,  0, R0  ],   // P0  ±Z straight        (links P1↑, P7↓)
-  ['map01.gltf', 0,  1, R90 ],   // P1  corner -Z↔+X       (links P0↓, P2→)
-  ['map00.gltf', 1,  1, R90 ],   // P2  ±X straight        (links P1←, P3→)
-  ['map01.gltf', 2,  1, R180],   // P3  corner -X↔-Z       (links P2←, P4↓)
-  ['map00.gltf', 2,  0, R0  ],   // P4  ±Z straight        (links P3↑, P5↓)
-  ['map01.gltf', 2, -1, RL90],   // P5  corner +Z↔-X       (links P4↑, P6←)
-  ['map00.gltf', 1, -1, R90 ],   // P6  ±X straight        (links P5→, P7←)
-  ['map01.gltf', 0, -1, R0  ],   // P7  corner +X↔+Z       (links P6→, P0↑)
+  ['map01.gltf', 0,  0, R0],   // corner at (0,0),  spans z[-40,  0]
+  ['map00.gltf', 0, -1, R0],   // corner at (0,-40), spans z[-80,-40]
+  ['map01.gltf', 0, -2, R0],   // corner at (0,-80), spans z[-120,-80]
 ];
-// Result, seen from above: a 3×3 grid of square tiles with the centre cell
-// (grid 1,0 after centring → world origin) left blank.
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
 // exactly one COURSE_CELL square. The source geometry already lies flat in
@@ -1348,27 +1343,29 @@ function makeCourseTile(src, yRot){
       mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true; };
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
   });
-  obj.updateMatrixWorld(true);
-  const box  = new THREE.Box3().setFromObject(obj);
-  const cen  = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  obj.position.sub(cen);                          // centre tile on origin (tile space)
+  // Geometry spans x∈[0,TILE_SRC], z∈[-TILE_SRC,0]. Keep its native corner
+  // (the geometry origin = bottom-left, x0/z0) at the tile origin — no
+  // centering — so a tile placed at world (px,pz) has its bottom-left corner
+  // there and spans x∈[px,px+CELL], z∈[pz-CELL,pz].
+  obj.position.set(0, 0, 0);
   const flat = new THREE.Group();                 // already flat in XZ — no tilt
   flat.add(obj);
-  flat.scale.setScalar(COURSE_CELL / Math.max(size.x, size.z));
+  flat.scale.setScalar(COURSE_CELL / TILE_SRC);
   const pivot = new THREE.Group();                // course rotation about world Y
   pivot.add(flat);
   pivot.rotation.y = yRot;
   return pivot;
 }
 
-// The ring's empty middle cell is grid (1,0); shift everything so that cell
-// sits on the world origin, leaving the whole course centred on (0,0).
-const COURSE_OFFSET_X = -1 * COURSE_CELL;
+// Tiles are corner-anchored at (col*CELL, row*CELL); no extra offset.
+const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
-// Vehicle start: on tile P0 (the straight 00 at grid 0,0), facing along its road.
-const START_X = 0 * COURSE_CELL + COURSE_OFFSET_X;   // = -COURSE_CELL
-const START_Z = 0 * COURSE_CELL + COURSE_OFFSET_Z;   // = 0
+// Centre of the stacked column (for start position and top-down view).
+const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
+const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
+// Vehicle start: on the middle (00) tile.
+const START_X = COURSE_CENTER_X;
+const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
 
 function buildLoopCourse(){
   const sources = {};
@@ -1840,16 +1837,16 @@ const _fVec=new THREE.Vector3();
 function getEffectiveYaw(){ return yaw; }
 
 // Top-down overview of the whole course (toggle with the V key) — lets you
-// verify the 3×3 tile layout from above, like a map.
+// verify the tile layout from above, like a map.
 let topView=false, _savedFogDensity=null;
-const TOPVIEW_HEIGHT=120;
+const TOPVIEW_HEIGHT=160;
 function updateMovement(dt){
   if(!gameActive) return;
 
   if(topView){
     if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
     scene.fog.density=0;                 // clear haze so the whole map is visible
-    camera.position.set(0,TOPVIEW_HEIGHT,0);
+    camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
     camera.rotation.set(-Math.PI/2,0,0);
     return;
   }
