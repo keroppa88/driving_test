@@ -1395,43 +1395,6 @@ function makeCourseTile(src, yRot){
 
 // Anchor: the ★ tile's front-left corner → world (0,0,0); else the bottom-left
 // tile (min col, max row). Other tiles fall relative (−X to the left, +Z 手前).
-let courseGroup = null;                                // set in buildLoopCourse
-const _groundRay = new THREE.Raycaster();
-const _rayDown = new THREE.Vector3(0,-1,0);
-const _rayOrig = new THREE.Vector3();
-const _wallRay = new THREE.Raycaster();
-const _moveDir = new THREE.Vector3();
-// Only the asphalt-road material counts as drivable floor. Everything else
-// (tan ground, structures, roofs) is ignored for the ground, so the player
-// stands only on the road. Adjust this list if the asphalt uses another name.
-// Available material names: FF8B8884, FF91918F, FFCBC8C8, FF99CCFF, CCCCCCCC, FF999900.
-const FLOOR_MATERIAL_NAMES = ['FF8B8884'];
-function isFloorHit(h){
-  const m = h.object && h.object.material;
-  return !!m && FLOOR_MATERIAL_NAMES.includes(m.name);
-}
-// Height of the asphalt floor under (x,z): the highest road-material hit.
-// Returns null if there is no road there.
-function courseGroundHeight(x,z){
-  if(!courseGroup) return null;
-  _rayOrig.set(x, 1000, z);
-  _groundRay.set(_rayOrig, _rayDown);
-  const hits = _groundRay.intersectObject(courseGroup, true);  // sorted top→down
-  for(const h of hits){ if(isFloorHit(h)) return h.point.y; }   // first road hit = highest
-  return null;
-}
-// Is there a wall in the move direction at eye height? (blocks; slopes below
-// the eye line are not hit, so they stay climbable.)
-function wallAhead(fromX,fromY,fromZ,dx,dz){
-  if(!courseGroup) return false;
-  const len = Math.hypot(dx,dz);
-  if(len < 1e-5) return false;
-  _moveDir.set(dx,0,dz).multiplyScalar(1/len);
-  _rayOrig.set(fromX,fromY,fromZ);
-  _wallRay.set(_rayOrig,_moveDir);
-  _wallRay.far = len + PLAYER_R;
-  return _wallRay.intersectObject(courseGroup,true).length > 0;
-}
 const _cCols = COURSE_TILES.map(t=>t.col), _cRows = COURSE_TILES.map(t=>t.row);
 const _anchor = COURSE_STAR || { col: Math.min(..._cCols), row: Math.max(..._cRows) };
 const COURSE_OFFSET_X = -_anchor.col * COURSE_CELL;
@@ -1463,12 +1426,9 @@ function buildLoopCourse(){
       course.add(tile);
     }
     scene.add(course);
-    courseGroup = course;
 
-    // Place the vehicle on the start tile, sitting on the ground (no cap).
+    // Place the vehicle on the start tile.
     camera.position.set(START_X, EYE_HEIGHT, START_Z);
-    const _g0 = courseGroundHeight(START_X, START_Z);
-    if(_g0!=null) camera.position.y = _g0 + EYE_HEIGHT;
 
     // Course is the whole map now: reveal the start screen once it is built.
     loadingEl.style.display='none';
@@ -1955,11 +1915,7 @@ function updateMovement(dt){
       dx = _fVec.x*cruiseSpeed*dt;
       dz = _fVec.z*cruiseSpeed*dt;
     }
-    // Collision: a wall at eye height in the move direction blocks the move.
-    // Gentle slopes sit below the eye line, so they are not hit → climbable.
-    if(!wallAhead(camera.position.x, camera.position.y, camera.position.z, dx, dz)){
-      camera.position.x += dx; camera.position.z += dz;
-    }
+    camera.position.x += dx; camera.position.z += dz;
   }
 
   // X-axis movement is no longer clamped — the player can move freely on X.
@@ -1971,11 +1927,7 @@ function updateMovement(dt){
   if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.625*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
   else{shakePhase=0;pitchShake*=.85;}
 
-  // Follow the standable surface (at/below the current eye, ignoring roofs) so
-  // the eye stays EYE_HEIGHT above the road, including on slopes. If nothing is
-  // found, keep the current height instead of dropping.
-  const _gy = courseGroundHeight(camera.position.x, camera.position.z);
-  if(_gy!=null) camera.position.y=_gy+EYE_HEIGHT;
+  camera.position.y=EYE_HEIGHT;
   camera.rotation.set(pitch+pitchShake,effYaw,0);
 }
 
