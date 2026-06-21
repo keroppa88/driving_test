@@ -1325,13 +1325,13 @@ const TILE_SRC = 2139194.5;
 // Unified layout notation — one line per tile: [ file, rotationDeg ]
 //   rotationDeg = CLOCKWISE (right) rotation in degrees (90 = right 90°,
 //   270 = right 270° = left 90°). 0 = as-authored.
-// Lines are ordered 手前(near) → 奥(far): the first tile's front-left corner
-// is at (x,y,z) = (0,0,0) and each next tile stacks one cell toward −Z (奥),
-// in the same column.
+// Lines are listed TOP→BOTTOM exactly as seen from above: the FIRST line is
+// 奥 (far, top of screen, most −Z); the LAST line is 手前 (near, bottom of
+// screen) whose front-left corner sits at (x,y,z) = (0,0,0). Same column.
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0  ],   // 手前 (左隅 = 0,0,0)
+  ['map01.gltf', 0  ],   // 奥  (画面の上)
   ['map00.gltf', 0  ],
-  ['map01.gltf', 270],   // 奥
+  ['map01.gltf', 270],   // 手前 (左隅 = 0,0,0, 画面の下)
 ];
 const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
 
@@ -1381,7 +1381,8 @@ function buildLoopCourse(){
     COURSE_LAYOUT.forEach(([file,deg],i)=>{
       const src = sources[file];
       if(!src) return;
-      const col = 0, row = -i;                       // stack 手前→奥 toward −Z
+      // First line = 奥 (most −Z); last line = 手前 (row 0, corner at origin).
+      const col = 0, row = i - (COURSE_LAYOUT.length - 1);
       const tile = makeCourseTile(src, deg2yrot(deg));
       // Place at the CELL CENTRE so the (unrotated) front-left corner lands on
       // the grid point (col*CELL, row*CELL); the cell spans +X and −Z from there.
