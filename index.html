@@ -1324,35 +1324,42 @@ const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 const TILE_SRC = 2139194.5;
 // ─── H・TS・OU記法 (grid layout notation) ──────────────────────────────────
 //   H  = 俯瞰     : written exactly as seen from straight above (−Z up, +X right)
-//   TS = 手前=画面下 : the BOTTOM line; its left tile's front-left corner = (0,0,0)
-//   OU = 奥=画面上   : the TOP line; farthest in −Z (top of screen)
+//   OU = 奥=画面上   : the TOP line; toward −Z. 手前=画面下: the BOTTOM line.
 // Grid text: each LINE is a row (top=奥/−Z, bottom=手前), comma-separated CELLS
 // are columns (left→right = +X). Each cell is "mapNN=deg"; an empty cell (blank
 // between commas) means no tile. deg = CLOCKWISE (right) degrees (90=right90°,
 // 270=left90°, 0=as-authored).
+//   ★ marks the tile whose front-left corner is anchored at (x,y,z)=(0,0,0).
+//   Other tiles are relative to it: cells to the LEFT of ★ get negative X,
+//   cells toward 手前 (BELOW ★) get positive Z. If no ★, the bottom-left tile.
 const COURSE_MAP = `
 map01=0,  map00=90, map01=90
 map00=0,  ,         map00=0
-map01=270,map00=90, map01=180
+map01=270★,map00=90, map01=180
 `;
 const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
 
 // Parse the grid text into tiles with grid coords. Bottom line → row 0 (手前,
 // z near 0); higher lines → more negative rows (奥). Left column → col 0 (x=0).
+// Returns { tiles, star } where star is the ★-marked tile's {col,row} (or null).
 function parseCourseMap(text){
   const lines = text.split('\n').map(l=>l.replace(/\s+/g,'')).filter(l=>l.length>0);
   const n = lines.length;
   const tiles = [];
+  let star = null;
   lines.forEach((line,r)=>{
     line.split(',').forEach((cell,c)=>{
-      const m = cell.match(/^map(\d+)=(-?\d+)$/);
+      const hasStar = cell.includes('★');
+      const m = cell.replace('★','').match(/^map(\d+)=(-?\d+)$/);
       if(!m) return;                                  // empty / invalid cell
-      tiles.push({ file:`map${m[1]}.gltf`, col:c, row:r-(n-1), deg:parseInt(m[2],10) });
+      const col = c, row = r - (n - 1);
+      tiles.push({ file:`map${m[1]}.gltf`, col, row, deg:parseInt(m[2],10) });
+      if(hasStar) star = { col, row };
     });
   });
-  return tiles;
+  return { tiles, star };
 }
-const COURSE_TILES = parseCourseMap(COURSE_MAP);
+const { tiles: COURSE_TILES, star: COURSE_STAR } = parseCourseMap(COURSE_MAP);
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
 // exactly one COURSE_CELL square. The source geometry already lies flat in
@@ -1377,13 +1384,15 @@ function makeCourseTile(src, yRot){
   return pivot;
 }
 
-// Tiles are corner-anchored at (col*CELL, row*CELL); no extra offset.
-const COURSE_OFFSET_X = 0;
-const COURSE_OFFSET_Z = 0;
-// Centre of the whole course (for start position and top-down view), from the grid.
+// Anchor: the ★ tile's front-left corner → world (0,0,0); else the bottom-left
+// tile (min col, max row). Other tiles fall relative (−X to the left, +Z 手前).
 const _cCols = COURSE_TILES.map(t=>t.col), _cRows = COURSE_TILES.map(t=>t.row);
-const COURSE_CENTER_X = ((Math.min(..._cCols)+Math.max(..._cCols))/2)*COURSE_CELL + COURSE_CELL/2;
-const COURSE_CENTER_Z = ((Math.min(..._cRows)+Math.max(..._cRows))/2)*COURSE_CELL - COURSE_CELL/2;
+const _anchor = COURSE_STAR || { col: Math.min(..._cCols), row: Math.max(..._cRows) };
+const COURSE_OFFSET_X = -_anchor.col * COURSE_CELL;
+const COURSE_OFFSET_Z = -_anchor.row * COURSE_CELL;
+// Centre of the whole course (for start position and top-down view), from the grid.
+const COURSE_CENTER_X = ((Math.min(..._cCols)+Math.max(..._cCols))/2)*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X;
+const COURSE_CENTER_Z = ((Math.min(..._cRows)+Math.max(..._cRows))/2)*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z;
 const START_X = COURSE_CENTER_X;
 const START_Z = COURSE_CENTER_Z;
 
@@ -1895,8 +1904,8 @@ function updateMovement(dt){
     }
   }
 
-  camera.position.x=Math.max(PLAY_X_MIN+PLAYER_R,Math.min(PLAY_X_MAX-PLAYER_R,camera.position.x));
-  if(camera.position.z<=PLAY_Z_MIN){camera.position.z+=LOOP_LENGTH;handleLoopTransition();}
+  // X-axis movement is no longer clamped — the player can move freely on X.
+  // Z-loop warp removed: the player no longer teleports back at PLAY_Z_MIN.
 
   // Rock shake
   const now2=performance.now(), dt2=Math.min((now2-shakeT0)/1000,.05); shakeT0=now2;
@@ -1949,8 +1958,8 @@ function animate(){
     hudSpeedEl.textContent=Math.round(cruiseSpeed/MAX_CRUISE*120);
   }
 
-  // Vehicle XY position on the map plane (Y = world Z).
-  coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Y '+(camera.position.z).toFixed(1);
+  // Vehicle position on the map plane: X = left/right (right +), Z = near/far (奥 −).
+  coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Z '+camera.position.z.toFixed(1);
 
   renderer.render(scene,camera);
 }
