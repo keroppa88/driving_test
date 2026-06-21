@@ -1323,12 +1323,13 @@ const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
 const TILE_SRC = 2139194.5;
 // [ source tile, gridCol, gridRow, yRotation ]
-// Simplified: just stack three tiles vertically (01 / 00 / 01, top→bottom)
-// to confirm they line up edge-to-edge.
+// Bottom-left corner of each tile is anchored at (col*CELL, row*CELL).
+// Stack upward (−Z): 01 corner at (0,0) → its top edge (z=-CELL) meets 00's
+// bottom edge → 00's top edge meets the next 01's bottom edge.
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0,  1, R0],   // top
-  ['map00.gltf', 0,  0, R0],   // middle
-  ['map01.gltf', 0, -1, R0],   // bottom
+  ['map01.gltf', 0,  0, R0],   // corner at (0,0),  spans z[-40,  0]
+  ['map00.gltf', 0, -1, R0],   // corner at (0,-40), spans z[-80,-40]
+  ['map01.gltf', 0, -2, R0],   // corner at (0,-80), spans z[-120,-80]
 ];
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
@@ -1342,10 +1343,11 @@ function makeCourseTile(src, yRot){
       mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true; };
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
   });
-  // Geometry spans x∈[0,TILE_SRC], z∈[-TILE_SRC,0]; translate so its centre
-  // sits on the origin. Deterministic (no bounding-box measurement) so every
-  // tile is centred and scaled identically.
-  obj.position.set(-TILE_SRC/2, 0, TILE_SRC/2);
+  // Geometry spans x∈[0,TILE_SRC], z∈[-TILE_SRC,0]. Keep its native corner
+  // (the geometry origin = bottom-left, x0/z0) at the tile origin — no
+  // centering — so a tile placed at world (px,pz) has its bottom-left corner
+  // there and spans x∈[px,px+CELL], z∈[pz-CELL,pz].
+  obj.position.set(0, 0, 0);
   const flat = new THREE.Group();                 // already flat in XZ — no tilt
   flat.add(obj);
   flat.scale.setScalar(COURSE_CELL / TILE_SRC);
@@ -1355,12 +1357,15 @@ function makeCourseTile(src, yRot){
   return pivot;
 }
 
-// Column is at grid col 0, rows -1..1 → keep it centred on the world origin.
+// Tiles are corner-anchored at (col*CELL, row*CELL); no extra offset.
 const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
-// Vehicle start: on the middle (00) tile at grid (0,0).
-const START_X = 0 * COURSE_CELL + COURSE_OFFSET_X;   // = 0
-const START_Z = 0 * COURSE_CELL + COURSE_OFFSET_Z;   // = 0
+// Centre of the stacked column (for start position and top-down view).
+const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
+const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
+// Vehicle start: on the middle (00) tile.
+const START_X = COURSE_CENTER_X;
+const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
 
 function buildLoopCourse(){
   const sources = {};
@@ -1832,16 +1837,16 @@ const _fVec=new THREE.Vector3();
 function getEffectiveYaw(){ return yaw; }
 
 // Top-down overview of the whole course (toggle with the V key) — lets you
-// verify the 3×3 tile layout from above, like a map.
+// verify the tile layout from above, like a map.
 let topView=false, _savedFogDensity=null;
-const TOPVIEW_HEIGHT=120;
+const TOPVIEW_HEIGHT=160;
 function updateMovement(dt){
   if(!gameActive) return;
 
   if(topView){
     if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
     scene.fog.density=0;                 // clear haze so the whole map is visible
-    camera.position.set(0,TOPVIEW_HEIGHT,0);
+    camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
     camera.rotation.set(-Math.PI/2,0,0);
     return;
   }
