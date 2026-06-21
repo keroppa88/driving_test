@@ -1322,16 +1322,18 @@ const COURSE_Y    = 0.0;           // height of the road surface
 const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
 const TILE_SRC = 2139194.5;
-// [ source tile, gridCol, gridRow, yRotation ]
-// Front-left corner anchored at (col*CELL, row*CELL); the cell extends +X
-// (right) and −Z (奥/away). Tiles are placed AS-IS (no auto rotation). The
-// near edge (下辺/手前) faces +Z, the far edge (上辺/奥) faces −Z, so the
-// column stacks toward −Z: 01 → 00 → 01.
+// Unified layout notation — one line per tile: [ file, rotationDeg ]
+//   rotationDeg = CLOCKWISE (right) rotation in degrees (90 = right 90°,
+//   270 = right 270° = left 90°). 0 = as-authored.
+// Lines are ordered 手前(near) → 奥(far): the first tile's front-left corner
+// is at (x,y,z) = (0,0,0) and each next tile stacks one cell toward −Z (奥),
+// in the same column.
 const COURSE_LAYOUT = [
-  ['map01.gltf', 0,  0, R0],   // 下辺(手前) at (0,0); spans z[-40,0]
-  ['map00.gltf', 0, -1, R0],   // spans z[-80,-40]
-  ['map01.gltf', 0, -2, R0],   // spans z[-120,-80]
+  ['map01.gltf', 0  ],   // 手前 (左隅 = 0,0,0)
+  ['map00.gltf', 0  ],
+  ['map01.gltf', 270],   // 奥
 ];
+const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
 
 // Normalise a loaded tile, centring it on its own origin and scaling it to
 // exactly one COURSE_CELL square. The source geometry already lies flat in
@@ -1361,7 +1363,7 @@ const COURSE_OFFSET_X = 0;
 const COURSE_OFFSET_Z = 0;
 // Centre of the stacked column (for start position and top-down view).
 const COURSE_CENTER_X = COURSE_CELL / 2;            // = 20
-const COURSE_CENTER_Z = -COURSE_CELL * 1.5;         // = -60 (middle of z[-120,0])
+const COURSE_CENTER_Z = -((COURSE_LAYOUT.length - 1) * COURSE_CELL) / 2 - COURSE_CELL / 2;
 // Vehicle start: on the middle (00) tile.
 const START_X = COURSE_CENTER_X;
 const START_Z = COURSE_CENTER_Z;                    // middle tile centre, z=-60
@@ -1376,16 +1378,17 @@ function buildLoopCourse(){
   }))).then(()=>{
     const course = new THREE.Group();
     course.name = 'loopCourse';
-    for(const [file,col,row,yRot] of COURSE_LAYOUT){
+    COURSE_LAYOUT.forEach(([file,deg],i)=>{
       const src = sources[file];
-      if(!src) continue;
-      const tile = makeCourseTile(src, yRot);
-      // Place at the CELL CENTRE so the (unrotated) bottom-left corner lands on
-      // the grid point (col*CELL, row*CELL); the cell spans +X and +Z from there.
+      if(!src) return;
+      const col = 0, row = -i;                       // stack 手前→奥 toward −Z
+      const tile = makeCourseTile(src, deg2yrot(deg));
+      // Place at the CELL CENTRE so the (unrotated) front-left corner lands on
+      // the grid point (col*CELL, row*CELL); the cell spans +X and −Z from there.
       tile.position.set(col*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X, COURSE_Y,
                         row*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z);
       course.add(tile);
-    }
+    });
     scene.add(course);
 
     // Place the vehicle on the start tile.
