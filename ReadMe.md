@@ -263,3 +263,6 @@ map01=270,map00=90, map01=180     ← 手前（左下が原点）
 ゲーム内座標
 X＝左右（右ほど＋）
 Z＝手前奥（奥ほどマイナス）＝ camera.position.z をそのまま表示
+
+<img width="741" height="594" alt="image" src="https://github.com/user-attachments/assets/527eb05b-2007-4606-827a-5d33b9518ac2" />
+
