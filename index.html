@@ -1331,6 +1331,8 @@ const COURSE_LAYOUT = [
   ['map00.gltf', 1, -1, RL90],   // P6  left of P5       (00, left 90°)
   ['map01.gltf', 0, -1, RL90],   // P7  left of P6 → P0  (01, left 90°)
 ];
+// Result, seen from above: a 3×3 grid of square tiles with the centre cell
+// (grid 1,0 after centring → world origin) left blank.
 
 // Normalise a loaded tile so it lies flat on the ground (XZ plane), is
 // centred on its own origin and fills exactly one COURSE_CELL square.
