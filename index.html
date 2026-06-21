@@ -1399,13 +1399,31 @@ let courseGroup = null;                                // set in buildLoopCourse
 const _groundRay = new THREE.Raycaster();
 const _rayDown = new THREE.Vector3(0,-1,0);
 const _rayOrig = new THREE.Vector3();
-// Ground (course surface) height under (x,z); null if off the course.
-function courseGroundHeight(x,z){
+const _wallRay = new THREE.Raycaster();
+const _moveDir = new THREE.Vector3();
+// Standable surface height under (x,z): the HIGHEST hit at/below maxY. This
+// ignores roofs/overhangs above the head (common in SKP-converted meshes) so
+// we follow the road, not a ceiling. Returns null if off the course.
+function courseGroundHeight(x,z,maxY){
   if(!courseGroup) return null;
   _rayOrig.set(x, 1000, z);
   _groundRay.set(_rayOrig, _rayDown);
-  const hits = _groundRay.intersectObject(courseGroup, true);
-  return hits.length ? hits[0].point.y : null;
+  const hits = _groundRay.intersectObject(courseGroup, true);  // sorted nearest→far (top→down)
+  const cap = (maxY==null) ? Infinity : maxY + 0.05;
+  for(const h of hits){ if(h.point.y <= cap) return h.point.y; }
+  return null;
+}
+// Is there a wall in the move direction at eye height? (blocks; slopes below
+// the eye line are not hit, so they stay climbable.)
+function wallAhead(fromX,fromY,fromZ,dx,dz){
+  if(!courseGroup) return false;
+  const len = Math.hypot(dx,dz);
+  if(len < 1e-5) return false;
+  _moveDir.set(dx,0,dz).multiplyScalar(1/len);
+  _rayOrig.set(fromX,fromY,fromZ);
+  _wallRay.set(_rayOrig,_moveDir);
+  _wallRay.far = len + PLAYER_R;
+  return _wallRay.intersectObject(courseGroup,true).length > 0;
 }
 const _cCols = COURSE_TILES.map(t=>t.col), _cRows = COURSE_TILES.map(t=>t.row);
 const _anchor = COURSE_STAR || { col: Math.min(..._cCols), row: Math.max(..._cRows) };
@@ -1440,8 +1458,10 @@ function buildLoopCourse(){
     scene.add(course);
     courseGroup = course;
 
-    // Place the vehicle on the start tile.
+    // Place the vehicle on the start tile, sitting on the ground (no cap).
     camera.position.set(START_X, EYE_HEIGHT, START_Z);
+    const _g0 = courseGroundHeight(START_X, START_Z, null);
+    if(_g0!=null) camera.position.y = _g0 + EYE_HEIGHT;
 
     // Course is the whole map now: reveal the start screen once it is built.
     loadingEl.style.display='none';
@@ -1928,12 +1948,10 @@ function updateMovement(dt){
       dx = _fVec.x*cruiseSpeed*dt;
       dz = _fVec.z*cruiseSpeed*dt;
     }
-    // Collision: block the move if the surface ahead is HIGHER than the current
-    // viewpoint Y (a wall). Gentle slopes (surface ≤ eye) are climbable.
-    const nx = camera.position.x+dx, nz = camera.position.z+dz;
-    const gAhead = courseGroundHeight(nx, nz);
-    if(gAhead==null || gAhead <= camera.position.y){
-      camera.position.x = nx; camera.position.z = nz;
+    // Collision: a wall at eye height in the move direction blocks the move.
+    // Gentle slopes sit below the eye line, so they are not hit → climbable.
+    if(!wallAhead(camera.position.x, camera.position.y, camera.position.z, dx, dz)){
+      camera.position.x += dx; camera.position.z += dz;
     }
   }
 
@@ -1946,10 +1964,11 @@ function updateMovement(dt){
   if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.625*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
   else{shakePhase=0;pitchShake*=.85;}
 
-  // Follow the course surface so the eye stays EYE_HEIGHT above the ground,
-  // including on slopes. Off the course, fall back to ground level 0.
-  const _gy = courseGroundHeight(camera.position.x, camera.position.z);
-  camera.position.y=(_gy!=null?_gy:0)+EYE_HEIGHT;
+  // Follow the standable surface (at/below the current eye, ignoring roofs) so
+  // the eye stays EYE_HEIGHT above the road, including on slopes. If nothing is
+  // found, keep the current height instead of dropping.
+  const _gy = courseGroundHeight(camera.position.x, camera.position.z, camera.position.y);
+  if(_gy!=null) camera.position.y=_gy+EYE_HEIGHT;
   camera.rotation.set(pitch+pitchShake,effYaw,0);
 }
 
