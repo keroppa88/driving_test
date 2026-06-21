@@ -1321,15 +1321,18 @@ const COURSE_Y    = 0.0;           // height of the road surface
 // (a "right"/clockwise turn seen from above), −π/2 turns North→West ("left").
 const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // [ source tile, gridCol, gridRow, yRotation ]
+// Rotations chosen so each tile's road meets both of its loop neighbours.
+// Native edges (after centring): map00 straight = +Z↔-Z; map01 corner = +Z(bottom)↔+X(right).
+// Y-rotation maps: R90 sends +X→-Z,+Z→+X; R180 negates; RL90 sends +X→+Z,+Z→-X.
 const COURSE_LAYOUT = [
-  ['map00.gltf', 0,  0, R0  ],   // P0  start            (00, 0°)
-  ['map01.gltf', 0,  1, R0  ],   // P1  above P0         (01, 0°)
-  ['map00.gltf', 1,  1, R90 ],   // P2  right of P1      (00, right 90°)
-  ['map01.gltf', 2,  1, R90 ],   // P3  right of P2      (01, right 90°)
-  ['map00.gltf', 2,  0, R180],   // P4  below P3         (00, 180°)
-  ['map01.gltf', 2, -1, R180],   // P5  below P4         (01, 180°)
-  ['map00.gltf', 1, -1, RL90],   // P6  left of P5       (00, left 90°)
-  ['map01.gltf', 0, -1, RL90],   // P7  left of P6 → P0  (01, left 90°)
+  ['map00.gltf', 0,  0, R0  ],   // P0  ±Z straight        (links P1↑, P7↓)
+  ['map01.gltf', 0,  1, R90 ],   // P1  corner -Z↔+X       (links P0↓, P2→)
+  ['map00.gltf', 1,  1, R90 ],   // P2  ±X straight        (links P1←, P3→)
+  ['map01.gltf', 2,  1, R180],   // P3  corner -X↔-Z       (links P2←, P4↓)
+  ['map00.gltf', 2,  0, R0  ],   // P4  ±Z straight        (links P3↑, P5↓)
+  ['map01.gltf', 2, -1, RL90],   // P5  corner +Z↔-X       (links P4↑, P6←)
+  ['map00.gltf', 1, -1, R90 ],   // P6  ±X straight        (links P5→, P7←)
+  ['map01.gltf', 0, -1, R0  ],   // P7  corner +X↔+Z       (links P6→, P0↑)
 ];
 // Result, seen from above: a 3×3 grid of square tiles with the centre cell
 // (grid 1,0 after centring → world origin) left blank.
