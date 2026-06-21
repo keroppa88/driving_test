@@ -641,7 +641,8 @@ const extDesertPlane = (() => {
   // tone that matches the GLB terrain; fog still fades it to the horizon colour.
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshBasicMaterial({ color:0x8a7048 }));
   m.rotation.x = -Math.PI/2; m.position.set(0,-0.05,-116); m.frustumCulled = false;
-  scene.add(m); return m;
+  // Ground rendering disabled so the loop course map is visible.
+  m.visible = false; scene.add(m); return m;
 })();
 
 // ─────────────────────────────────────────────
