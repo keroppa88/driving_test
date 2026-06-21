@@ -1336,13 +1336,13 @@ const COURSE_MAP = `
 map01=0,  map00=90, map01=90
 map00=0,  ,         map00=0
 map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
+map03=0,  ,         map02=0
+map03=0,  ,         map00=0
+map03=0,  map03=0,  map03=0
+map03=0,  ,         map00=0
+map02=0,  ,         map02=0
+map02=0,  ,         map02=0
+map02=0,  ,         map02=0
 map00=0,  ,         map00=0
 map01=270★,map00=90, map01=180
 `;
@@ -1893,7 +1893,10 @@ function getEffectiveYaw(){ return yaw; }
 // Top-down overview of the whole course (toggle with the V key) — lets you
 // verify the tile layout from above, like a map.
 let topView=false, _savedFogDensity=null;
-const TOPVIEW_HEIGHT=220;
+const TOPVIEW_HEIGHT=Math.max(
+  (Math.max(..._cCols)-Math.min(..._cCols)+1),
+  (Math.max(..._cRows)-Math.min(..._cRows)+1)
+)*COURSE_CELL*0.95;
 function updateMovement(dt){
   if(!gameActive) return;
 
