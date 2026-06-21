@@ -1335,6 +1335,15 @@ const TILE_SRC = 2139194.5;
 const COURSE_MAP = `
 map01=0,  map00=90, map01=90
 map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
+map00=0,  ,         map00=0
 map01=270★,map00=90, map01=180
 `;
 const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
@@ -1386,6 +1395,18 @@ function makeCourseTile(src, yRot){
 
 // Anchor: the ★ tile's front-left corner → world (0,0,0); else the bottom-left
 // tile (min col, max row). Other tiles fall relative (−X to the left, +Z 手前).
+let courseGroup = null;                                // set in buildLoopCourse
+const _groundRay = new THREE.Raycaster();
+const _rayDown = new THREE.Vector3(0,-1,0);
+const _rayOrig = new THREE.Vector3();
+// Ground (course surface) height under (x,z); null if off the course.
+function courseGroundHeight(x,z){
+  if(!courseGroup) return null;
+  _rayOrig.set(x, 1000, z);
+  _groundRay.set(_rayOrig, _rayDown);
+  const hits = _groundRay.intersectObject(courseGroup, true);
+  return hits.length ? hits[0].point.y : null;
+}
 const _cCols = COURSE_TILES.map(t=>t.col), _cRows = COURSE_TILES.map(t=>t.row);
 const _anchor = COURSE_STAR || { col: Math.min(..._cCols), row: Math.max(..._cRows) };
 const COURSE_OFFSET_X = -_anchor.col * COURSE_CELL;
@@ -1417,6 +1438,7 @@ function buildLoopCourse(){
       course.add(tile);
     }
     scene.add(course);
+    courseGroup = course;
 
     // Place the vehicle on the start tile.
     camera.position.set(START_X, EYE_HEIGHT, START_Z);
@@ -1913,7 +1935,10 @@ function updateMovement(dt){
   if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.625*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
   else{shakePhase=0;pitchShake*=.85;}
 
-  camera.position.y=EYE_HEIGHT;
+  // Follow the course surface so the eye stays EYE_HEIGHT above the ground,
+  // including on slopes. Off the course, fall back to ground level 0.
+  const _gy = courseGroundHeight(camera.position.x, camera.position.z);
+  camera.position.y=(_gy!=null?_gy:0)+EYE_HEIGHT;
   camera.rotation.set(pitch+pitchShake,effYaw,0);
 }
 
