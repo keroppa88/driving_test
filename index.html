@@ -1849,8 +1849,10 @@ function updateMovement(dt){
   if(topView){
     if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
     scene.fog.density=0;                 // clear haze so the whole map is visible
-    camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
-    camera.up.set(0,0,1);                 // +Z points up on screen (forward/up = +Z)
+    // View from BELOW looking up: with up=+Z this gives +Z up AND +X right
+    // (a true map/plot orientation). Tiles are double-sided so visible.
+    camera.position.set(COURSE_CENTER_X,-TOPVIEW_HEIGHT,COURSE_CENTER_Z);
+    camera.up.set(0,0,1);
     camera.lookAt(COURSE_CENTER_X,0,COURSE_CENTER_Z);
     return;
   }
