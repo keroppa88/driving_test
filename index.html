@@ -1401,16 +1401,23 @@ const _rayDown = new THREE.Vector3(0,-1,0);
 const _rayOrig = new THREE.Vector3();
 const _wallRay = new THREE.Raycaster();
 const _moveDir = new THREE.Vector3();
-// Standable surface height under (x,z): the HIGHEST hit at/below maxY. This
-// ignores roofs/overhangs above the head (common in SKP-converted meshes) so
-// we follow the road, not a ceiling. Returns null if off the course.
-function courseGroundHeight(x,z,maxY){
+// Only the asphalt-road material counts as drivable floor. Everything else
+// (tan ground, structures, roofs) is ignored for the ground, so the player
+// stands only on the road. Adjust this list if the asphalt uses another name.
+// Available material names: FF8B8884, FF91918F, FFCBC8C8, FF99CCFF, CCCCCCCC, FF999900.
+const FLOOR_MATERIAL_NAMES = ['FF8B8884'];
+function isFloorHit(h){
+  const m = h.object && h.object.material;
+  return !!m && FLOOR_MATERIAL_NAMES.includes(m.name);
+}
+// Height of the asphalt floor under (x,z): the highest road-material hit.
+// Returns null if there is no road there.
+function courseGroundHeight(x,z){
   if(!courseGroup) return null;
   _rayOrig.set(x, 1000, z);
   _groundRay.set(_rayOrig, _rayDown);
-  const hits = _groundRay.intersectObject(courseGroup, true);  // sorted nearest→far (top→down)
-  const cap = (maxY==null) ? Infinity : maxY + 0.05;
-  for(const h of hits){ if(h.point.y <= cap) return h.point.y; }
+  const hits = _groundRay.intersectObject(courseGroup, true);  // sorted top→down
+  for(const h of hits){ if(isFloorHit(h)) return h.point.y; }   // first road hit = highest
   return null;
 }
 // Is there a wall in the move direction at eye height? (blocks; slopes below
@@ -1460,7 +1467,7 @@ function buildLoopCourse(){
 
     // Place the vehicle on the start tile, sitting on the ground (no cap).
     camera.position.set(START_X, EYE_HEIGHT, START_Z);
-    const _g0 = courseGroundHeight(START_X, START_Z, null);
+    const _g0 = courseGroundHeight(START_X, START_Z);
     if(_g0!=null) camera.position.y = _g0 + EYE_HEIGHT;
 
     // Course is the whole map now: reveal the start screen once it is built.
@@ -1967,7 +1974,7 @@ function updateMovement(dt){
   // Follow the standable surface (at/below the current eye, ignoring roofs) so
   // the eye stays EYE_HEIGHT above the road, including on slopes. If nothing is
   // found, keep the current height instead of dropping.
-  const _gy = courseGroundHeight(camera.position.x, camera.position.z, camera.position.y);
+  const _gy = courseGroundHeight(camera.position.x, camera.position.z);
   if(_gy!=null) camera.position.y=_gy+EYE_HEIGHT;
   camera.rotation.set(pitch+pitchShake,effYaw,0);
 }
