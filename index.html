@@ -1355,6 +1355,14 @@ function makeCourseTile(src, yRot){
   return pivot;
 }
 
+// The ring's empty middle cell is grid (1,0); shift everything so that cell
+// sits on the world origin, leaving the whole course centred on (0,0).
+const COURSE_OFFSET_X = -1 * COURSE_CELL;
+const COURSE_OFFSET_Z = 0;
+// Vehicle start: on tile P0 (the straight 00 at grid 0,0), facing along its road.
+const START_X = 0 * COURSE_CELL + COURSE_OFFSET_X;   // = -COURSE_CELL
+const START_Z = 0 * COURSE_CELL + COURSE_OFFSET_Z;   // = 0
+
 function buildLoopCourse(){
   const sources = {};
   const loader = new GLTFLoader();
@@ -1369,46 +1377,26 @@ function buildLoopCourse(){
       const src = sources[file];
       if(!src) continue;
       const tile = makeCourseTile(src, yRot);
-      tile.position.set(col*COURSE_CELL, COURSE_Y, row*COURSE_CELL);
+      tile.position.set(col*COURSE_CELL + COURSE_OFFSET_X, COURSE_Y, row*COURSE_CELL + COURSE_OFFSET_Z);
       course.add(tile);
     }
     scene.add(course);
+
+    // Place the vehicle on the start tile.
+    camera.position.set(START_X, EYE_HEIGHT, START_Z);
+
+    // Course is the whole map now: reveal the start screen once it is built.
+    loadingEl.style.display='none';
+    startOverlay.style.display='flex';
+    loadProgEl.textContent='';
   });
 }
 buildLoopCourse();
 
-new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
-  const model=gltf.scene;
-  model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;};
-    Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
-  model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
-  model.position.set(-cen.x,0,-cen.z); scene.add(model); model.updateMatrixWorld(true);
-  addRocks();
-  const mc=model.clone(); mc.position.set(model.position.x,model.position.y,model.position.z-LOOP_LENGTH);
-  scene.add(mc); saModelMain=model; saModelCopy=mc;
-  const sp=model.position;
-  loadSpecialModel('sa02.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model02=r.main;model02Copy=r.copy;}});
-  loadSpecialModel('sa03.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model03=r.main;model03Copy=r.copy;}});
-  loadSpecialModel('sa04.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model04=r.main;model04Copy=r.copy;}});
-  loadSpecialModel('sa05.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model05=r.main;model05Copy=r.copy;}});
-  loadSpecialModel('sa06.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model06=r.main;model06Copy=r.copy;}});
-  loadSpecialModel('sa07.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model07=r.main;model07Copy=r.copy;}});
-
-  loadingEl.style.display='none';
-  startOverlay.style.display='flex';
-  loadProgEl.textContent='';
-}, xhr=>{
-  if(xhr.total) loadProgEl.textContent=`${Math.round(xhr.loaded/xhr.total*100)}%`;
-}, err=>{ console.error(err); loadProgEl.textContent='読み込みエラー'; });
-
-// Load heavier models in background after start
-function loadHeavyModels(){
-  const sp=saModelMain?.position??{x:0,y:0,z:0};
-  loadSpecialModel('sa08.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model08=r.main;model08Copy=r.copy;}});
-  loadSpecialModel('sa09.glb',sp.x,sp.y,sp.z).then(r=>{if(r){model09=r.main;model09Copy=r.copy;}});
-}
+// Existing desert/building map (sa01–sa09) and the rock field are no longer
+// used — only the loop course above is shown. loadHeavyModels is kept as a
+// no-op so existing call sites stay valid.
+function loadHeavyModels(){}
 
 // ─────────────────────────────────────────────
 //  AUDIO PRELOAD
@@ -1527,6 +1515,13 @@ const colorHudEl = document.createElement('div');
 colorHudEl.id = 'color-hud';
 colorHudEl.style.cssText = 'position:absolute;top:30px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;display:none;letter-spacing:.03em;';
 wrapper.appendChild(colorHudEl);
+
+// XY coordinate readout (vehicle position on the map plane).
+const coordHudEl = document.createElement('div');
+coordHudEl.id = 'coord-hud';
+coordHudEl.style.cssText = 'position:absolute;bottom:8px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;letter-spacing:.03em;';
+wrapper.appendChild(coordHudEl);
+
 function konamiInput(tok){
   konamiIdx = (tok===KONAMI[konamiIdx]) ? konamiIdx+1 : (tok===KONAMI[0] ? 1 : 0);
   if(konamiIdx===KONAMI.length){
@@ -1909,6 +1904,9 @@ function animate(){
   if(gameActive){
     hudSpeedEl.textContent=Math.round(cruiseSpeed/MAX_CRUISE*120);
   }
+
+  // Vehicle XY position on the map plane (Y = world Z).
+  coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Y '+(camera.position.z).toFixed(1);
 
   renderer.render(scene,camera);
 }
