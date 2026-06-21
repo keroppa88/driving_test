@@ -1918,14 +1918,22 @@ function updateMovement(dt){
   cruiseSpeed=+speedSlider.value/100*MAX_CRUISE;
 
   if(cruiseSpeed>0){
+    let dx, dz;
     if(autoPilot){
-      camera.position.z-=cruiseSpeed*dt;
-      camera.position.x+=(AP_TARGET_X-camera.position.x)*Math.min(.5*dt,1);
+      dz = -cruiseSpeed*dt;
+      dx = (AP_TARGET_X-camera.position.x)*Math.min(.5*dt,1);
     } else {
       _fVec.set(0,0,-1).applyEuler(new THREE.Euler(0,effYaw,0));
       _fVec.y=0; _fVec.normalize();
-      camera.position.x+=_fVec.x*cruiseSpeed*dt;
-      camera.position.z+=_fVec.z*cruiseSpeed*dt;
+      dx = _fVec.x*cruiseSpeed*dt;
+      dz = _fVec.z*cruiseSpeed*dt;
+    }
+    // Collision: block the move if the surface ahead is HIGHER than the current
+    // viewpoint Y (a wall). Gentle slopes (surface ≤ eye) are climbable.
+    const nx = camera.position.x+dx, nz = camera.position.z+dz;
+    const gAhead = courseGroundHeight(nx, nz);
+    if(gAhead==null || gAhead <= camera.position.y){
+      camera.position.x = nx; camera.position.z = nz;
     }
   }
 
