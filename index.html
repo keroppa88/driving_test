@@ -1643,6 +1643,7 @@ btnHud.addEventListener('click',()=>{
       case 'ArrowRight': e.preventDefault(); seekYT(+10);     break;
       case 'y': case 'Y': btnPlay.click();  break;
       case 'a': case 'A': btnHud.click();   break;
+      case 'v': case 'V': topView=!topView; break;
       case 'Escape': exitPlaylist(); break;
     }
   });
@@ -1835,8 +1836,21 @@ const _fVec=new THREE.Vector3();
 
 function getEffectiveYaw(){ return yaw; }
 
+// Top-down overview of the whole course (toggle with the V key) — lets you
+// verify the 3×3 tile layout from above, like a map.
+let topView=false, _savedFogDensity=null;
+const TOPVIEW_HEIGHT=120;
 function updateMovement(dt){
   if(!gameActive) return;
+
+  if(topView){
+    if(_savedFogDensity===null){ _savedFogDensity=scene.fog.density; }
+    scene.fog.density=0;                 // clear haze so the whole map is visible
+    camera.position.set(0,TOPVIEW_HEIGHT,0);
+    camera.rotation.set(-Math.PI/2,0,0);
+    return;
+  }
+  if(_savedFogDensity!==null){ scene.fog.density=_savedFogDensity; _savedFogDensity=null; }
 
   const effYaw=getEffectiveYaw();
   updateCruiseBgm();
