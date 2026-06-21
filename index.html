@@ -1322,12 +1322,13 @@ const COURSE_Y    = 0.0;           // height of the road surface
 const R0 = 0, R90 = Math.PI/2, R180 = Math.PI, RL90 = -Math.PI/2;
 // Source tiles span x∈[0,TILE_SRC], z∈[-TILE_SRC,0] with Y=0 (flat in XZ).
 const TILE_SRC = 2139194.5;
-// Unified layout notation — one line per tile: [ file, rotationDeg ]
-//   rotationDeg = CLOCKWISE (right) rotation in degrees (90 = right 90°,
-//   270 = right 270° = left 90°). 0 = as-authored.
-// Lines are listed TOP→BOTTOM exactly as seen from above: the FIRST line is
-// 奥 (far, top of screen, most −Z); the LAST line is 手前 (near, bottom of
-// screen) whose front-left corner sits at (x,y,z) = (0,0,0). Same column.
+// ─── H・TS・OU記法 (layout notation) ───────────────────────────────────────
+//   H  = 俯瞰    : written exactly as seen from straight above (−Z up, +X right)
+//   TS = 手前=画面下 : the LAST line; its front-left corner is at (x,y,z)=(0,0,0)
+//   OU = 奥=画面上   : the FIRST line; farthest in −Z (top of screen)
+// One line per tile: [ file, rotationDeg ].
+//   rotationDeg = CLOCKWISE (right) degrees: 90 = right 90°, 270 = left 90°,
+//   0 = as-authored. Tiles stack one cell toward −Z, same column.
 const COURSE_LAYOUT = [
   ['map01.gltf', 0  ],   // 奥  (画面の上)
   ['map00.gltf', 0  ],
