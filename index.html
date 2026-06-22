@@ -1359,10 +1359,14 @@ function parseCourseMap(text){
   lines.forEach((line,r)=>{
     line.split(',').forEach((cell,c)=>{
       const hasStar = cell.includes('★');
-      const m = cell.replace('★','').match(/^map(\d+)=(-?\d+)$/);
-      if(!m) return;                                  // empty / invalid cell
+      const raw = cell.replace('★','');
+      // Accept "mapNN=deg" or the short "N-deg" (N = map number, zero-padded).
+      let m = raw.match(/^map(\d+)=(-?\d+)$/);
+      let num, deg;
+      if(m){ num=m[1]; deg=parseInt(m[2],10); }
+      else { m = raw.match(/^(\d+)-(\d+)$/); if(!m) return; num=String(+m[1]).padStart(2,'0'); deg=parseInt(m[2],10); }
       const col = c, row = r - (n - 1);
-      tiles.push({ file:`map${m[1]}.gltf`, col, row, deg:parseInt(m[2],10) });
+      tiles.push({ file:`map${num}.gltf`, col, row, deg });
       if(hasStar) star = { col, row };
     });
   });
@@ -1404,6 +1408,68 @@ const COURSE_CENTER_X = ((Math.min(..._cCols)+Math.max(..._cCols))/2)*COURSE_CEL
 const COURSE_CENTER_Z = ((Math.min(..._cRows)+Math.max(..._cRows))/2)*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z;
 const START_X = COURSE_CENTER_X;
 const START_Z = COURSE_CENTER_Z;
+
+// ─── Per-map walkable areas (authored, not derived from geometry) ───────────
+// Each tile is divided into a WALK_N × WALK_N sub-grid. Walkable sub-cells are
+// listed per map type in 縦/横 (row/col), 1-based, on the UNROTATED tile:
+//   縦 (row) 1..32 : 1 = 奥 (top of 俯瞰, −Z) … 32 = 手前 (bottom, +Z)
+//   横 (col) 1..32 : 1 = 左 (−X) … 32 = 右 (+X)
+// Each entry is "縦/横" (one cell) or "縦/横-縦/横" (inclusive rectangle range).
+// A map not listed here is fully walkable; positions off every tile are blocked.
+// The tile's rotation is applied automatically (define as if unrotated).
+const WALK_N = 32;
+const TILE_WALKABLE = {
+  map00: ['1/15-32/18'],                                  // 高速道路 中央上下直線1
+  map01: ['1/14-32/19', '14/1-19/32'],                    // 十字路
+  map02: ['14/14-20/32', '21/14-32/19'],                  // 曲がり角
+  map03: ['7/19-12/32', '1/13-32/20'],                    // 高速出入口と一般道接続
+  map04: ['1/13-32/20'],                                  // 街中 中央上下直線
+  map05: ['1/15-32/18'],                                  // 高速道路 直線2（建物密集）
+  map06: ['1/15-32/18'],                                  // 高速道路 直線3（建物密集2）
+  map07: ['1/13-32/20'],                                  // 街中 直線（池側道）
+  map08: [],                                              // 池（通行不可）
+  map09: ['1/15-32/18', '7/12-12/13', '13/12-20/13', '21/12-28/14'], // 高速出入口
+  map10: ['14/1-20/32', '21/14-32/19'],                   // 三差路
+  map11: ['14/14-20/32', '21/14-32/19'],                  // 曲がり角2
+};
+// Build a WALK_N×WALK_N boolean grid from "縦/横[-縦/横]" entries.
+function buildWalkGrid(entries){
+  const g = Array.from({length:WALK_N}, ()=>new Array(WALK_N).fill(false));
+  for(const e of entries){
+    const pts = e.split('-').map(s=>s.split('/').map(Number));
+    const [r0,c0]=pts[0], [r1,c1]=pts[1]||pts[0];
+    for(let r=Math.min(r0,r1); r<=Math.max(r0,r1); r++)
+      for(let c=Math.min(c0,c1); c<=Math.max(c0,c1); c++)
+        if(r>=1&&r<=WALK_N&&c>=1&&c<=WALK_N) g[r-1][c-1]=true;
+  }
+  return g;
+}
+const _walkGrids = {};
+for(const k in TILE_WALKABLE) _walkGrids[k] = buildWalkGrid(TILE_WALKABLE[k]);
+// Look up the tile occupying a grid cell.
+const _tileByCell = new Map();
+for(const t of COURSE_TILES) _tileByCell.set(t.col+','+t.row, t);
+// Is world position (px,pz) inside a walkable sub-cell?
+function isWalkable(px,pz){
+  const col = Math.round((px - COURSE_OFFSET_X - COURSE_CELL/2)/COURSE_CELL);
+  const row = Math.round((pz - COURSE_OFFSET_Z + COURSE_CELL/2)/COURSE_CELL);
+  const tile = _tileByCell.get(col+','+row);
+  if(!tile) return false;                                  // off the course → blocked
+  const base = tile.file.replace('.gltf','');
+  const grid = _walkGrids[base];
+  if(!grid) return true;                                   // unlisted map → fully walkable
+  const cx = col*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X;
+  const cz = row*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z;
+  // Un-rotate the point into the tile's unrotated local frame, then normalise.
+  const a = -deg2yrot(tile.deg);
+  const lx = px - cx, lz = pz - cz;
+  const rx = lx*Math.cos(a) + lz*Math.sin(a);
+  const rz = -lx*Math.sin(a) + lz*Math.cos(a);
+  const u = rx/COURSE_CELL + 0.5, v = rz/COURSE_CELL + 0.5;   // 0..1 (+X right, +Z 手前)
+  if(u<0||u>=1||v<0||v>=1) return false;
+  const c = Math.floor(u*WALK_N), r = Math.floor(v*WALK_N);   // 0-based; r along 縦, c along 横
+  return grid[r][c];
+}
 
 function buildLoopCourse(){
   const sources = {};
@@ -1915,7 +1981,12 @@ function updateMovement(dt){
       dx = _fVec.x*cruiseSpeed*dt;
       dz = _fVec.z*cruiseSpeed*dt;
     }
-    camera.position.x += dx; camera.position.z += dz;
+    // Restrict movement to walkable areas (per-map authored regions). Try the
+    // full move, then each axis alone so you can slide along boundaries.
+    const cx0=camera.position.x, cz0=camera.position.z, nx=cx0+dx, nz=cz0+dz;
+    if(isWalkable(nx,nz)){ camera.position.x=nx; camera.position.z=nz; }
+    else if(isWalkable(nx,cz0)){ camera.position.x=nx; }
+    else if(isWalkable(cx0,nz)){ camera.position.z=nz; }
   }
 
   // X-axis movement is no longer clamped — the player can move freely on X.
