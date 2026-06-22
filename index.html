@@ -484,7 +484,7 @@ const soundPanel   = document.getElementById('sound-panel');
 // ─────────────────────────────────────────────
 //  CONSTANTS (USA)
 // ─────────────────────────────────────────────
-const EYE_HEIGHT   = 0.27;
+const EYE_HEIGHT   = 0.54;
 const MAX_CRUISE   = 22;
 const PLAYER_R     = 0.3;
 const PLAY_X_MIN   = -21.1, PLAY_X_MAX = 21.1;
@@ -1963,6 +1963,16 @@ const TOPVIEW_HEIGHT=Math.max(
   (Math.max(..._cCols)-Math.min(..._cCols)+1),
   (Math.max(..._cRows)-Math.min(..._cRows)+1)
 )*COURSE_CELL*0.95;
+// Player ground position (kept separately because the top-down view hijacks
+// the camera) and a marker shown for it in the V overview.
+let playerX = START_X, playerZ = START_Z;
+const POS_MARKER_Y = COURSE_CELL;                 // above the tiles, below the overhead camera
+const posMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(COURSE_CELL*0.12, 16, 12),
+  new THREE.MeshBasicMaterial({ color:0xff3030 })
+);
+posMarker.frustumCulled = false; posMarker.visible = false; posMarker.renderOrder = 999;
+scene.add(posMarker);
 function updateMovement(dt){
   if(!gameActive) return;
 
@@ -1974,8 +1984,14 @@ function updateMovement(dt){
     camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
     camera.up.set(0,0,-1);
     camera.lookAt(COURSE_CENTER_X,0,COURSE_CENTER_Z);
+    posMarker.visible=true;
+    posMarker.position.set(playerX, POS_MARKER_Y, playerZ);   // user position
     return;
   }
+  posMarker.visible=false;
+  // Restore the player's ground position (no-op during normal play; needed
+  // after leaving the top-down view, which moved the camera overhead).
+  camera.position.x=playerX; camera.position.z=playerZ;
   if(_savedFogDensity!==null){ scene.fog.density=_savedFogDensity; _savedFogDensity=null; camera.up.set(0,1,0); }
 
   const effYaw=getEffectiveYaw();
@@ -2014,6 +2030,7 @@ function updateMovement(dt){
 
   camera.position.y=EYE_HEIGHT;
   camera.rotation.set(pitch+pitchShake,effYaw,0);
+  playerX=camera.position.x; playerZ=camera.position.z;   // remember ground position
 }
 
 function animate(){
