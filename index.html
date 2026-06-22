@@ -1359,10 +1359,14 @@ function parseCourseMap(text){
   lines.forEach((line,r)=>{
     line.split(',').forEach((cell,c)=>{
       const hasStar = cell.includes('★');
-      const m = cell.replace('★','').match(/^map(\d+)=(-?\d+)$/);
-      if(!m) return;                                  // empty / invalid cell
+      const raw = cell.replace('★','');
+      // Accept "mapNN=deg" or the short "N-deg" (N = map number, zero-padded).
+      let m = raw.match(/^map(\d+)=(-?\d+)$/);
+      let num, deg;
+      if(m){ num=m[1]; deg=parseInt(m[2],10); }
+      else { m = raw.match(/^(\d+)-(\d+)$/); if(!m) return; num=String(+m[1]).padStart(2,'0'); deg=parseInt(m[2],10); }
       const col = c, row = r - (n - 1);
-      tiles.push({ file:`map${m[1]}.gltf`, col, row, deg:parseInt(m[2],10) });
+      tiles.push({ file:`map${num}.gltf`, col, row, deg });
       if(hasStar) star = { col, row };
     });
   });
