@@ -1333,18 +1333,18 @@ const TILE_SRC = 2139194.5;
 //   Other tiles are relative to it: cells to the LEFT of ★ get negative X,
 //   cells toward 手前 (BELOW ★) get positive Z. If no ★, the bottom-left tile.
 const COURSE_MAP = `
-map01=0,  map00=90, map01=90
-map00=0,  ,         map00=0
-map00=0,  ,         map00=0
-map03=0,  ,         map02=0
-map03=0,  ,         map00=0
-map03=0,  map03=0,  map03=0
-map03=0,  ,         map00=0
-map02=0,  ,         map02=0
-map02=0,  ,         map02=0
-map02=0,  ,         map02=0
-map00=0,  ,         map00=0
-map01=270★,map00=90, map01=180
+11,4-90,4-270,11-90,0,4
+4-180,2,2-270,4,0,4-270
+1,1-90,2-180,3,9,10-270
+4,4,11,10-90,6,4
+1-90,11-180,4-180,4-180,5-180,10-270
+4-180,8,7,4,6-180,4
+4,8,7,4,5,4-180
+1-270,7-270,1,10-90,6,10-270
+4-180,8,4-180,4,5-180,4-180
+10-90,8,4,4-180,6,10-270
+4,8,4-180,4,9-180,3-180
+10-180,4,10-180,2-180,5,10-270
 `;
 const deg2yrot = deg => -deg * Math.PI / 180;   // clockwise(right)-positive → three.js Y
 
@@ -1360,11 +1360,12 @@ function parseCourseMap(text){
     line.split(',').forEach((cell,c)=>{
       const hasStar = cell.includes('★');
       const raw = cell.replace('★','');
-      // Accept "mapNN=deg" or the short "N-deg" (N = map number, zero-padded).
-      let m = raw.match(/^map(\d+)=(-?\d+)$/);
-      let num, deg;
-      if(m){ num=m[1]; deg=parseInt(m[2],10); }
-      else { m = raw.match(/^(\d+)-(\d+)$/); if(!m) return; num=String(+m[1]).padStart(2,'0'); deg=parseInt(m[2],10); }
+      // Accept "mapNN=deg", short "N-deg", or bare "N" (deg 0). N is zero-padded.
+      let m, num, deg;
+      if(m = raw.match(/^map(\d+)=(-?\d+)$/)){ num=m[1]; deg=parseInt(m[2],10); }
+      else if(m = raw.match(/^(\d+)-(\d+)$/)){ num=String(+m[1]).padStart(2,'0'); deg=parseInt(m[2],10); }
+      else if(m = raw.match(/^(\d+)$/)){ num=String(+m[1]).padStart(2,'0'); deg=0; }
+      else return;                                    // empty / invalid cell
       const col = c, row = r - (n - 1);
       tiles.push({ file:`map${num}.gltf`, col, row, deg });
       if(hasStar) star = { col, row };
@@ -1406,8 +1407,20 @@ const COURSE_OFFSET_Z = -_anchor.row * COURSE_CELL;
 // Centre of the whole course (for start position and top-down view), from the grid.
 const COURSE_CENTER_X = ((Math.min(..._cCols)+Math.max(..._cCols))/2)*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X;
 const COURSE_CENTER_Z = ((Math.min(..._cRows)+Math.max(..._cRows))/2)*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z;
-const START_X = COURSE_CENTER_X;
-const START_Z = COURSE_CENTER_Z;
+// Course world bounds (for toroidal wrap): top/bottom and left/right edges loop.
+const _minC=Math.min(..._cCols), _maxC=Math.max(..._cCols);
+const _minR=Math.min(..._cRows), _maxR=Math.max(..._cRows);
+const COURSE_X_MIN = _minC*COURSE_CELL + COURSE_OFFSET_X;
+const COURSE_X_MAX = (_maxC+1)*COURSE_CELL + COURSE_OFFSET_X;
+const COURSE_Z_MIN = (_minR-1)*COURSE_CELL + COURSE_OFFSET_Z;
+const COURSE_Z_MAX = _maxR*COURSE_CELL + COURSE_OFFSET_Z;
+const COURSE_W = COURSE_X_MAX - COURSE_X_MIN, COURSE_D = COURSE_Z_MAX - COURSE_Z_MIN;
+const _mod = (a,n)=>((a%n)+n)%n;
+const wrapX = x => COURSE_X_MIN + _mod(x - COURSE_X_MIN, COURSE_W);
+const wrapZ = z => COURSE_Z_MIN + _mod(z - COURSE_Z_MIN, COURSE_D);
+// Start: centre of the bottom-left tile (最下段・左端).
+const START_X = _minC*COURSE_CELL + COURSE_CELL/2 + COURSE_OFFSET_X;
+const START_Z = _maxR*COURSE_CELL - COURSE_CELL/2 + COURSE_OFFSET_Z;
 
 // ─── Per-map walkable areas (authored, not derived from geometry) ───────────
 // Each tile is divided into a WALK_N × WALK_N sub-grid. Walkable sub-cells are
@@ -1981,9 +1994,10 @@ function updateMovement(dt){
       dx = _fVec.x*cruiseSpeed*dt;
       dz = _fVec.z*cruiseSpeed*dt;
     }
-    // Restrict movement to walkable areas (per-map authored regions). Try the
-    // full move, then each axis alone so you can slide along boundaries.
-    const cx0=camera.position.x, cz0=camera.position.z, nx=cx0+dx, nz=cz0+dz;
+    // Toroidal wrap (top/bottom and left/right edges loop) then restrict to
+    // walkable areas. Try the full move, then each axis alone (slide along walls).
+    const cx0=camera.position.x, cz0=camera.position.z;
+    const nx=wrapX(cx0+dx), nz=wrapZ(cz0+dz);
     if(isWalkable(nx,nz)){ camera.position.x=nx; camera.position.z=nz; }
     else if(isWalkable(nx,cz0)){ camera.position.x=nx; }
     else if(isWalkable(cx0,nz)){ camera.position.z=nz; }
