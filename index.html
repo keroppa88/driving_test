@@ -1415,11 +1415,18 @@ const START_Z = COURSE_CENTER_Z;
 // The tile's rotation is applied automatically (define as if unrotated).
 const WALK_N = 32;
 const TILE_WALKABLE = {
-  // examples — replace with the real walkable cells:
-  map00: ['1/13-32/20'],
-  map01: ['1/13-20/20', '13/13-20/32'],
-  map02: ['1/13-32/20'],
-  map03: ['1/13-32/20'],
+  map00: ['1/15-32/18'],                                  // 高速道路 中央上下直線1
+  map01: ['1/14-32/19', '14/1-19/32'],                    // 十字路
+  map02: ['14/14-20/32', '21/14-32/19'],                  // 曲がり角
+  map03: ['7/19-12/32', '1/13-32/20'],                    // 高速出入口と一般道接続
+  map04: ['1/13-32/20'],                                  // 街中 中央上下直線
+  map05: ['1/15-32/18'],                                  // 高速道路 直線2（建物密集）
+  map06: ['1/15-32/18'],                                  // 高速道路 直線3（建物密集2）
+  map07: ['1/13-32/20'],                                  // 街中 直線（池側道）
+  map08: [],                                              // 池（通行不可）
+  map09: ['1/15-32/18', '7/12-12/13', '13/12-20/13', '21/12-28/14'], // 高速出入口
+  map10: ['14/1-20/32', '21/14-32/19'],                   // 三差路
+  map11: ['14/14-20/32', '21/14-32/19'],                  // 曲がり角2
 };
 // Build a WALK_N×WALK_N boolean grid from "縦/横[-縦/横]" entries.
 function buildWalkGrid(entries){
