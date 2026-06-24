@@ -1549,6 +1549,9 @@ loadPlaylist().then(()=>initYTPlayer()).catch(console.error);
 //  MOBILE INPUT STATE
 // ─────────────────────────────────────────────
 let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
+// Camera look offset relative to the vehicle heading (right stick); decays back
+// to 0 (re-aligns with the heading) when the stick is released.
+let lookYaw=0, lookPitch=0;
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -1788,9 +1791,22 @@ btnHud.addEventListener('click',()=>{
     for(let i=0;i<pads.length;i++){ if(pads[i]){gp=pads[i];break;} }
     if(!gp) return;
 
-    // Left stick X → steering (yaw)
+    // Left stick X → steering (vehicle heading / handle)
     const stickX=gp.axes[0]||0;
     if(Math.abs(stickX)>0.12) yaw-=stickX*0.03;
+
+    // Right stick → look around (offset from heading); release re-aligns.
+    const rx=gp.axes[2]||0, ry=gp.axes[3]||0;
+    let looking=false;
+    if(Math.abs(rx)>0.15){ lookYaw-=rx*0.04; looking=true; }
+    if(Math.abs(ry)>0.15){ lookPitch-=ry*0.03; looking=true; }
+    lookYaw =Math.max(-Math.PI, Math.min(Math.PI, lookYaw));
+    lookPitch=Math.max(-1.3, Math.min(1.3, lookPitch));
+    if(!looking){                                   // snap back toward heading
+      lookYaw*=0.85; lookPitch*=0.85;
+      if(Math.abs(lookYaw)<1e-3) lookYaw=0;
+      if(Math.abs(lookPitch)<1e-3) lookPitch=0;
+    }
 
     // Rising-edge buttons
     function onPress(idx,fn){
@@ -2029,7 +2045,9 @@ function updateMovement(dt){
   else{shakePhase=0;pitchShake*=.85;}
 
   camera.position.y=EYE_HEIGHT;
-  camera.rotation.set(pitch+pitchShake,effYaw,0);
+  // Movement follows the vehicle heading (effYaw); the camera adds the look
+  // offset so you can glance around without changing where you drive.
+  camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw, 0);
   playerX=camera.position.x; playerZ=camera.position.z;   // remember ground position
 }
 
