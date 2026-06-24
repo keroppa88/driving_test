@@ -1538,10 +1538,9 @@ function buildNihonbashi(){
     const s = NIHON_SIZE/Math.max(size.x,size.z);
     flat.scale.setScalar(s); flat.updateMatrixWorld(true);
     box=new THREE.Box3().setFromObject(flat); const cen=box.getCenter(new THREE.Vector3());
-    flat.position.x-=cen.x; flat.position.z-=cen.z; flat.position.y-=box.min.y;  // centre XZ, base at y=0
-    // Eye height scaled to the (large) map so it's a real car-like height, not
-    // ground-level. ~1.5 m assuming source units are mm.
-    EYE_HEIGHT = s * 750;                    // halved viewpoint height
+    flat.position.x-=cen.x; flat.position.z-=cen.z;  // centre XZ; keep source y=0 at world y=0
+    // Eye height scaled to the (large) map. Source y=0 is the ground.
+    EYE_HEIGHT = s * 375;                    // viewpoint height (quartered from initial)
     COLLIDE_Y_THRESH = s * 300;             // ~0.3 m above ground counts as a wall
     COLLIDE_RADIUS   = s * 1000;             // ~1 m look-ahead buffer
     mapGroup = flat;
