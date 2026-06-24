@@ -484,7 +484,7 @@ const soundPanel   = document.getElementById('sound-panel');
 // ─────────────────────────────────────────────
 //  CONSTANTS (USA)
 // ─────────────────────────────────────────────
-const EYE_HEIGHT   = 1.08;
+let EYE_HEIGHT   = 1.08;
 const MAX_CRUISE   = 22;
 const PLAYER_R     = 0.3;
 const PLAY_X_MIN   = -21.1, PLAY_X_MAX = 21.1;
@@ -1511,9 +1511,13 @@ function buildNihonbashi(){
     const flat=new THREE.Group(); flat.add(m);
     scene.add(flat); flat.updateMatrixWorld(true);
     let box=new THREE.Box3().setFromObject(flat), size=box.getSize(new THREE.Vector3());
-    flat.scale.setScalar(NIHON_SIZE/Math.max(size.x,size.z)); flat.updateMatrixWorld(true);
+    const s = NIHON_SIZE/Math.max(size.x,size.z);
+    flat.scale.setScalar(s); flat.updateMatrixWorld(true);
     box=new THREE.Box3().setFromObject(flat); const cen=box.getCenter(new THREE.Vector3());
     flat.position.x-=cen.x; flat.position.z-=cen.z; flat.position.y-=box.min.y;  // centre XZ, base at y=0
+    // Eye height scaled to the (large) map so it's a real car-like height, not
+    // ground-level. ~1.5 m assuming source units are mm.
+    EYE_HEIGHT = s * 1500;
     mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
     camera.position.set(0,EYE_HEIGHT,0); playerX=0; playerZ=0;
     loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
