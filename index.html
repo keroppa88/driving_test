@@ -1500,6 +1500,18 @@ const USE_NIHONBASHI = true;
 const NIHON_SIZE = 2000;                 // world size of the map's larger horizontal extent
 let mapViewCX = COURSE_CENTER_X, mapViewCZ = COURSE_CENTER_Z, mapViewH = TOPVIEW_HEIGHT;
 
+// Collision rule for the single map: anything standing above the ground
+// (top surface y > threshold) blocks; flat ground (y≈0) is drivable.
+let mapGroup = null;
+const _cRay = new THREE.Raycaster(), _cDown = new THREE.Vector3(0,-1,0), _cOrig = new THREE.Vector3();
+let COLLIDE_Y_THRESH = 1.0;                 // set from map scale in buildNihonbashi
+function isBlockedAt(x,z){
+  if(!mapGroup) return false;
+  _cOrig.set(x, 100000, z); _cRay.set(_cOrig, _cDown);
+  const hits = _cRay.intersectObject(mapGroup, true);   // sorted top→down
+  return hits.length>0 && hits[0].point.y > COLLIDE_Y_THRESH;
+}
+
 function buildNihonbashi(){
   new GLTFLoader().load('nihonbashi.gltf?v='+Date.now(), g=>{
     const m=g.scene;
@@ -1518,6 +1530,8 @@ function buildNihonbashi(){
     // Eye height scaled to the (large) map so it's a real car-like height, not
     // ground-level. ~1.5 m assuming source units are mm.
     EYE_HEIGHT = s * 1500;
+    COLLIDE_Y_THRESH = s * 300;             // ~0.3 m above ground counts as a wall
+    mapGroup = flat;
     mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
     camera.position.set(0,EYE_HEIGHT,0); playerX=0; playerZ=0;
     loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
@@ -2065,8 +2079,11 @@ function updateMovement(dt){
       dz = _fVec.z*cruiseSpeed*dt;
     }
     if(USE_NIHONBASHI){
-      // Single large map: free movement (loop wrap and walkable areas disabled).
-      camera.position.x+=dx; camera.position.z+=dz;
+      // Single large map: block anything above the ground (y>0); slide on walls.
+      const cx0=camera.position.x, cz0=camera.position.z, nx=cx0+dx, nz=cz0+dz;
+      if(!isBlockedAt(nx,nz)){ camera.position.x=nx; camera.position.z=nz; }
+      else if(!isBlockedAt(nx,cz0)){ camera.position.x=nx; }
+      else if(!isBlockedAt(cx0,nz)){ camera.position.z=nz; }
     } else {
       // Toroidal wrap (top/bottom and left/right edges loop) then restrict to
       // walkable areas. Try the full move, then each axis alone (slide along walls).
