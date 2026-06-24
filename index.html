@@ -1500,29 +1500,47 @@ const USE_NIHONBASHI = true;
 const NIHON_SIZE = 2000;                 // world size of the map's larger horizontal extent
 let mapViewCX = COURSE_CENTER_X, mapViewCZ = COURSE_CENTER_Z, mapViewH = TOPVIEW_HEIGHT;
 
-// Collision rule for the single map: anything standing above the ground blocks;
-// flat ground (y≈0) is drivable. We use a forward ray (catches walls in the
-// path, even thin/hollow buildings) plus a down ray at the target (catches
-// solid roofed footprints).
-let mapGroup = null;
-const _cRay = new THREE.Raycaster(), _cDown = new THREE.Vector3(0,-1,0),
-      _cOrig = new THREE.Vector3(), _cDir = new THREE.Vector3();
+// Collision for the single map: bake an occupancy grid at load. Any triangle
+// with a vertex above the ground threshold marks its XZ footprint as blocked,
+// so "anything above y=0" is solid. Deterministic (no per-frame raycast).
 let COLLIDE_Y_THRESH = 1.0;     // height above ground that counts as a wall
-let COLLIDE_RADIUS   = 2.0;     // forward look-ahead buffer (player size)
-function aboveGround(x,z){
-  if(!mapGroup) return false;
-  _cOrig.set(x,100000,z); _cRay.set(_cOrig,_cDown); _cRay.far=Infinity;
-  const hits=_cRay.intersectObject(mapGroup,true);
-  return hits.length>0 && hits[0].point.y > COLLIDE_Y_THRESH;
+let occ = null;                 // { grid, N, minX, minZ, w, d }
+function bakeOccupancy(group){
+  group.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(group);
+  const minX=box.min.x, minZ=box.min.z;
+  const w=Math.max(1e-6, box.max.x-minX), d=Math.max(1e-6, box.max.z-minZ);
+  const N=1024, grid=new Uint8Array(N*N);
+  const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3();
+  group.traverse(o=>{
+    if(!o.isMesh||!o.geometry) return;
+    const pos=o.geometry.attributes.position; if(!pos) return;
+    const idx=o.geometry.index, mw=o.matrixWorld;
+    const n=idx?idx.count:pos.count;
+    for(let i=0;i<n;i+=3){
+      const i0=idx?idx.getX(i):i, i1=idx?idx.getX(i+1):i+1, i2=idx?idx.getX(i+2):i+2;
+      a.fromBufferAttribute(pos,i0).applyMatrix4(mw);
+      b.fromBufferAttribute(pos,i1).applyMatrix4(mw);
+      c.fromBufferAttribute(pos,i2).applyMatrix4(mw);
+      if(a.y<=COLLIDE_Y_THRESH && b.y<=COLLIDE_Y_THRESH && c.y<=COLLIDE_Y_THRESH) continue;
+      let x0=Math.min(a.x,b.x,c.x), x1=Math.max(a.x,b.x,c.x);
+      let z0=Math.min(a.z,b.z,c.z), z1=Math.max(a.z,b.z,c.z);
+      let cx0=Math.floor((x0-minX)/w*N), cx1=Math.floor((x1-minX)/w*N);
+      let cz0=Math.floor((z0-minZ)/d*N), cz1=Math.floor((z1-minZ)/d*N);
+      cx0=Math.max(0,cx0); cz0=Math.max(0,cz0); cx1=Math.min(N-1,cx1); cz1=Math.min(N-1,cz1);
+      for(let cz=cz0;cz<=cz1;cz++) for(let cx=cx0;cx<=cx1;cx++) grid[cz*N+cx]=1;
+    }
+  });
+  return { grid, N, minX, minZ, w, d };
 }
-function wallAhead(x,z,dx,dz){
-  if(!mapGroup) return false;
-  const len=Math.hypot(dx,dz); if(len<1e-6) return false;
-  _cDir.set(dx,0,dz).multiplyScalar(1/len);
-  _cOrig.set(x, COLLIDE_Y_THRESH, z); _cRay.set(_cOrig,_cDir); _cRay.far=len+COLLIDE_RADIUS;
-  return _cRay.intersectObject(mapGroup,true).length>0;
+function moveBlocked(x,z,dx,dz){
+  if(!occ) return false;
+  const tx=x+dx, tz=z+dz;
+  const cx=Math.floor((tx-occ.minX)/occ.w*occ.N);
+  const cz=Math.floor((tz-occ.minZ)/occ.d*occ.N);
+  if(cx<0||cx>=occ.N||cz<0||cz>=occ.N) return false;   // off the map → allow
+  return occ.grid[cz*occ.N+cx]===1;
 }
-function moveBlocked(x,z,dx,dz){ return wallAhead(x,z,dx,dz) || aboveGround(x+dx,z+dz); }
 
 function buildNihonbashi(){
   new GLTFLoader().load('nihonbashi.gltf?v='+Date.now(), g=>{
@@ -1542,8 +1560,7 @@ function buildNihonbashi(){
     // Eye height scaled to the (large) map. Source y=0 is the ground.
     EYE_HEIGHT = s * 375;                    // viewpoint height (quartered from initial)
     COLLIDE_Y_THRESH = s * 300;             // ~0.3 m above ground counts as a wall
-    COLLIDE_RADIUS   = s * 1000;             // ~1 m look-ahead buffer
-    mapGroup = flat;
+    occ = bakeOccupancy(flat);               // bake building footprints once
     mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
     camera.position.set(-415,EYE_HEIGHT,-263); playerX=-415; playerZ=-263;
     loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
