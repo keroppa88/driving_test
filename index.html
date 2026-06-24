@@ -1496,8 +1496,8 @@ function buildNihonbashi(){
       const fix=mt=>{ if(!mt) return; mt.transparent=false; mt.opacity=1; mt.depthWrite=true; mt.side=THREE.DoubleSide; mt.needsUpdate=true; };
       Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
     });
-    // Source is an XY-plane map with Z up; lay it flat (XZ plane, Y up).
-    const flat=new THREE.Group(); flat.add(m); flat.rotation.x=-Math.PI/2;
+    // Source is already flat in the XZ plane (X×Z horizontal, Y up) — no tilt.
+    const flat=new THREE.Group(); flat.add(m);
     scene.add(flat); flat.updateMatrixWorld(true);
     let box=new THREE.Box3().setFromObject(flat), size=box.getSize(new THREE.Vector3());
     flat.scale.setScalar(NIHON_SIZE/Math.max(size.x,size.z)); flat.updateMatrixWorld(true);
