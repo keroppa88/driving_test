@@ -484,7 +484,7 @@ const soundPanel   = document.getElementById('sound-panel');
 // ─────────────────────────────────────────────
 //  CONSTANTS (USA)
 // ─────────────────────────────────────────────
-const EYE_HEIGHT   = 0.54;
+const EYE_HEIGHT   = 1.08;
 const MAX_CRUISE   = 22;
 const PLAYER_R     = 0.3;
 const PLAY_X_MIN   = -21.1, PLAY_X_MAX = 21.1;
@@ -618,7 +618,10 @@ setSkyFromColor('#9bbae8');
 // ─────────────────────────────────────────────
 //  CAMERA
 // ─────────────────────────────────────────────
-const camera = new THREE.PerspectiveCamera(70, 1, 0.01, 1000);
+// Wide-angle view. FOV is the VERTICAL angle; the horizontal angle is wider
+// still (depends on aspect). A true 180° is impossible with a perspective lens
+// (it stretches to infinity at 180°), so this is a strong wide-angle, not 180°.
+const camera = new THREE.PerspectiveCamera(110, 1, 0.01, 1000);
 camera.rotation.order = 'YXZ';
 camera.position.set(0, EYE_HEIGHT, -5);
 
