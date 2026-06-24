@@ -1484,7 +1484,34 @@ function isWalkable(px,pz){
   return grid[r][c];
 }
 
+// Single-map mode: use only nihonbashi.gltf (large map); loop/walkable disabled.
+const USE_NIHONBASHI = true;
+const NIHON_SIZE = 2000;                 // world size of the map's larger horizontal extent
+let mapViewCX = COURSE_CENTER_X, mapViewCZ = COURSE_CENTER_Z, mapViewH = TOPVIEW_HEIGHT;
+
+function buildNihonbashi(){
+  new GLTFLoader().load('nihonbashi.gltf?v='+Date.now(), g=>{
+    const m=g.scene;
+    m.traverse(c=>{ if(!c.isMesh) return; c.frustumCulled=false;
+      const fix=mt=>{ if(!mt) return; mt.transparent=false; mt.opacity=1; mt.depthWrite=true; mt.side=THREE.DoubleSide; mt.needsUpdate=true; };
+      Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
+    });
+    // Source is an XY-plane map with Z up; lay it flat (XZ plane, Y up).
+    const flat=new THREE.Group(); flat.add(m); flat.rotation.x=-Math.PI/2;
+    scene.add(flat); flat.updateMatrixWorld(true);
+    let box=new THREE.Box3().setFromObject(flat), size=box.getSize(new THREE.Vector3());
+    flat.scale.setScalar(NIHON_SIZE/Math.max(size.x,size.z)); flat.updateMatrixWorld(true);
+    box=new THREE.Box3().setFromObject(flat); const cen=box.getCenter(new THREE.Vector3());
+    flat.position.x-=cen.x; flat.position.z-=cen.z; flat.position.y-=box.min.y;  // centre XZ, base at y=0
+    mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
+    camera.position.set(0,EYE_HEIGHT,0); playerX=0; playerZ=0;
+    loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
+  }, xhr=>{ if(xhr.total) loadProgEl.textContent=Math.round(xhr.loaded/xhr.total*100)+'%'; },
+     err=>{ console.error(err); loadProgEl.textContent='読み込みエラー'; });
+}
+
 function buildLoopCourse(){
+  if(USE_NIHONBASHI){ buildNihonbashi(); return; }
   const sources = {};
   const loader = new GLTFLoader();
   const files = [...new Set(COURSE_TILES.map(t=>t.file))];
@@ -1997,9 +2024,9 @@ function updateMovement(dt){
     scene.fog.density=0;                 // clear haze so the whole map is visible
     // Honest top-down from ABOVE. up=-Z puts 奥(−Z) at the top of the screen
     // and +X (右辺) on the right — the orientation a real overhead view gives.
-    camera.position.set(COURSE_CENTER_X,TOPVIEW_HEIGHT,COURSE_CENTER_Z);
+    camera.position.set(mapViewCX,mapViewH,mapViewCZ);
     camera.up.set(0,0,-1);
-    camera.lookAt(COURSE_CENTER_X,0,COURSE_CENTER_Z);
+    camera.lookAt(mapViewCX,0,mapViewCZ);
     posMarker.visible=true;
     posMarker.position.set(playerX, POS_MARKER_Y, playerZ);   // user position
     return;
@@ -2026,13 +2053,18 @@ function updateMovement(dt){
       dx = _fVec.x*cruiseSpeed*dt;
       dz = _fVec.z*cruiseSpeed*dt;
     }
-    // Toroidal wrap (top/bottom and left/right edges loop) then restrict to
-    // walkable areas. Try the full move, then each axis alone (slide along walls).
-    const cx0=camera.position.x, cz0=camera.position.z;
-    const nx=wrapX(cx0+dx), nz=wrapZ(cz0+dz);
-    if(isWalkable(nx,nz)){ camera.position.x=nx; camera.position.z=nz; }
-    else if(isWalkable(nx,cz0)){ camera.position.x=nx; }
-    else if(isWalkable(cx0,nz)){ camera.position.z=nz; }
+    if(USE_NIHONBASHI){
+      // Single large map: free movement (loop wrap and walkable areas disabled).
+      camera.position.x+=dx; camera.position.z+=dz;
+    } else {
+      // Toroidal wrap (top/bottom and left/right edges loop) then restrict to
+      // walkable areas. Try the full move, then each axis alone (slide along walls).
+      const cx0=camera.position.x, cz0=camera.position.z;
+      const nx=wrapX(cx0+dx), nz=wrapZ(cz0+dz);
+      if(isWalkable(nx,nz)){ camera.position.x=nx; camera.position.z=nz; }
+      else if(isWalkable(nx,cz0)){ camera.position.x=nx; }
+      else if(isWalkable(cx0,nz)){ camera.position.z=nz; }
+    }
   }
 
   // X-axis movement is no longer clamped — the player can move freely on X.
