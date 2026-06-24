@@ -484,7 +484,7 @@ const soundPanel   = document.getElementById('sound-panel');
 // ─────────────────────────────────────────────
 //  CONSTANTS (USA)
 // ─────────────────────────────────────────────
-const EYE_HEIGHT   = 0.54;
+const EYE_HEIGHT   = 1.08;
 const MAX_CRUISE   = 22;
 const PLAYER_R     = 0.3;
 const PLAY_X_MIN   = -21.1, PLAY_X_MAX = 21.1;
@@ -511,6 +511,9 @@ function onResize() {
   const W = wrapper.clientWidth, H = wrapper.clientHeight;
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
+  // Keep the horizontal (left-right) FOV fixed; derive vertical fov from aspect.
+  const hfov = HORIZONTAL_FOV_DEG * Math.PI / 180;
+  camera.fov = 2 * Math.atan(Math.tan(hfov / 2) / camera.aspect) * 180 / Math.PI;
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', onResize);
@@ -618,6 +621,10 @@ setSkyFromColor('#9bbae8');
 // ─────────────────────────────────────────────
 //  CAMERA
 // ─────────────────────────────────────────────
+// Wide-angle view controlled by the HORIZONTAL (left-right) field of view.
+// onResize derives the vertical fov from this so the horizontal angle stays
+// fixed regardless of aspect (e.g. fullscreen on a wide monitor).
+const HORIZONTAL_FOV_DEG = 120;
 const camera = new THREE.PerspectiveCamera(70, 1, 0.01, 1000);
 camera.rotation.order = 'YXZ';
 camera.position.set(0, EYE_HEIGHT, -5);
