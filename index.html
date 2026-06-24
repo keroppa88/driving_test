@@ -1541,12 +1541,12 @@ function buildNihonbashi(){
     flat.position.x-=cen.x; flat.position.z-=cen.z; flat.position.y-=box.min.y;  // centre XZ, base at y=0
     // Eye height scaled to the (large) map so it's a real car-like height, not
     // ground-level. ~1.5 m assuming source units are mm.
-    EYE_HEIGHT = s * 1500;
+    EYE_HEIGHT = s * 750;                    // halved viewpoint height
     COLLIDE_Y_THRESH = s * 300;             // ~0.3 m above ground counts as a wall
     COLLIDE_RADIUS   = s * 1000;             // ~1 m look-ahead buffer
     mapGroup = flat;
     mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
-    camera.position.set(0,EYE_HEIGHT,0); playerX=0; playerZ=0;
+    camera.position.set(-415,EYE_HEIGHT,-263); playerX=-415; playerZ=-263;
     loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
   }, xhr=>{ if(xhr.total) loadProgEl.textContent=Math.round(xhr.loaded/xhr.total*100)+'%'; },
      err=>{ console.error(err); loadProgEl.textContent='読み込みエラー'; });
