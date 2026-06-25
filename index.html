@@ -465,6 +465,7 @@ body.screen-only #screen-wrapper::before { display:none; }
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ─────────────────────────────────────────────
 //  DOM REFS
@@ -1503,12 +1504,33 @@ let mapViewCX = COURSE_CENTER_X, mapViewCZ = COURSE_CENTER_Z, mapViewH = TOPVIEW
 function buildNihonbashi(){
   new GLTFLoader().load('nihonbashi.gltf?v='+Date.now(), g=>{
     const m=g.scene;
-    m.traverse(c=>{ if(!c.isMesh) return; c.frustumCulled=false;
-      const fix=mt=>{ if(!mt) return; mt.transparent=false; mt.opacity=1; mt.depthWrite=true; mt.side=THREE.DoubleSide; mt.needsUpdate=true; };
-      Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);
+    // Merge the ~1500 meshes by material into a few meshes to cut draw calls
+    // (huge win, especially since the panorama renders the scene 6× per frame).
+    m.updateMatrixWorld(true);
+    const byMat=new Map();
+    m.traverse(o=>{
+      if(!o.isMesh||!o.geometry) return;
+      const mat=Array.isArray(o.material)?o.material[0]:o.material;
+      let geo=o.geometry.clone();
+      // keep only position so all geometries in a group merge cleanly
+      const pos=geo.getAttribute('position'); if(!pos) return;
+      const ng=new THREE.BufferGeometry();
+      ng.setAttribute('position', pos.clone());
+      if(geo.index) ng.setIndex(geo.index.clone());
+      ng.applyMatrix4(o.matrixWorld);
+      if(!byMat.has(mat)) byMat.set(mat,[]);
+      byMat.get(mat).push(ng);
     });
+    const merged=new THREE.Group();
+    for(const [mat,geos] of byMat){
+      const mg=geos.length>1?BufferGeometryUtils.mergeGeometries(geos,false):geos[0];
+      if(!mg) continue;
+      mat.transparent=false; mat.opacity=1; mat.depthWrite=true; mat.side=THREE.DoubleSide; mat.needsUpdate=true;
+      const mesh=new THREE.Mesh(mg, mat); mesh.frustumCulled=false;
+      merged.add(mesh);
+    }
     // Source is already flat in the XZ plane (X×Z horizontal, Y up) — no tilt.
-    const flat=new THREE.Group(); flat.add(m);
+    const flat=new THREE.Group(); flat.add(merged);
     scene.add(flat); flat.updateMatrixWorld(true);
     let box=new THREE.Box3().setFromObject(flat), size=box.getSize(new THREE.Vector3());
     const s = NIHON_SIZE/Math.max(size.x,size.z);
@@ -2098,7 +2120,7 @@ function updateMovement(dt){
 // a full-screen quad: horizontal = linear angle (no seams / no rectilinear
 // edge-stretch), so it wraps naturally across a curved/triple screen.
 let PANO_HFOV = 120 * Math.PI/180;          // horizontal field of view (tunable)
-const _panoCubeRT = new THREE.WebGLCubeRenderTarget(1024, { minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter });
+const _panoCubeRT = new THREE.WebGLCubeRenderTarget(768, { minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter });
 const _panoCubeCam = new THREE.CubeCamera(0.05, 6000, _panoCubeRT);
 const _panoScene = new THREE.Scene();
 const _panoCam = new THREE.Camera();
