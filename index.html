@@ -1593,8 +1593,6 @@ let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
 // Camera look offset relative to the vehicle heading (right stick); decays back
 // to 0 (re-aligns with the heading) when the stick is released.
 let lookYaw=0, lookPitch=0;
-// Steering look-ahead: the view leads into the turn (look toward where you steer).
-let lookAhead=0, prevSteerYaw=0;
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -2089,16 +2087,40 @@ function updateMovement(dt){
   else{shakePhase=0;pitchShake*=.85;}
 
   camera.position.y=EYE_HEIGHT;
-  // Steering look-ahead: lean the view toward where you're turning (turn rate),
-  // easing back to centre when going straight.
-  const turnRate=(yaw-prevSteerYaw)/Math.max(dt,1e-3); prevSteerYaw=yaw;
-  const targetLA=Math.max(-0.7, Math.min(0.7, turnRate*0.18));
-  lookAhead += (targetLA-lookAhead)*Math.min(1, dt*5);
   // Movement follows the vehicle heading (effYaw); the camera adds the manual
-  // look offset (right stick) plus the automatic steering look-ahead.
-  camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw+lookAhead, 0);
+  // look offset (right stick). Yaw/pitch here drive the cylindrical panorama.
+  camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw, 0);
   playerX=camera.position.x; playerZ=camera.position.z;   // remember ground position
 }
+
+// ── Cylindrical panorama (seamless ultra-wide view for curved displays) ──────
+// Render the scene into a cubemap each frame, then resample it cylindrically to
+// a full-screen quad: horizontal = linear angle (no seams / no rectilinear
+// edge-stretch), so it wraps naturally across a curved/triple screen.
+let PANO_HFOV = 160 * Math.PI/180;          // horizontal field of view (tunable)
+const _panoCubeRT = new THREE.WebGLCubeRenderTarget(1024, { minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter });
+const _panoCubeCam = new THREE.CubeCamera(0.05, 6000, _panoCubeRT);
+const _panoScene = new THREE.Scene();
+const _panoCam = new THREE.Camera();
+const _panoMat = new THREE.ShaderMaterial({
+  uniforms:{ tCube:{value:_panoCubeRT.texture}, yaw:{value:0}, pitch:{value:0}, hfov:{value:PANO_HFOV}, vfov:{value:PANO_HFOV*0.55} },
+  depthTest:false, depthWrite:false,
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
+  fragmentShader:`
+    precision highp float;
+    uniform samplerCube tCube; uniform float yaw,pitch,hfov,vfov; varying vec2 vUv;
+    void main(){
+      float a=(vUv.x-0.5)*hfov;       // horizontal angle (cylindrical)
+      float b=(vUv.y-0.5)*vfov;       // vertical angle
+      vec3 d=vec3(sin(a)*cos(b), sin(b), -cos(a)*cos(b));   // local, forward = -Z
+      float cp=cos(pitch), sp=sin(pitch);
+      d=vec3(d.x, d.y*cp - d.z*sp, d.y*sp + d.z*cp);        // pitch about X
+      float cy=cos(yaw), sy=sin(yaw);
+      d=vec3(d.x*cy + d.z*sy, d.y, -d.x*sy + d.z*cy);       // yaw about Y
+      gl_FragColor=textureCube(tCube, d);
+    }`
+});
+_panoScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), _panoMat));
 
 function animate(){
   requestAnimationFrame(animate);
@@ -2149,11 +2171,24 @@ function animate(){
   renderer.setScissorTest(false);
   const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
   renderer.setViewport(0,0,W,H);
-  camera.aspect=W/H;
-  const hf=HORIZONTAL_FOV_DEG*Math.PI/180;
-  camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
-  camera.updateProjectionMatrix();
-  renderer.render(scene,camera);
+  if(topView){
+    // Overhead view: ordinary single rectilinear render.
+    camera.aspect=W/H;
+    const hf=HORIZONTAL_FOV_DEG*Math.PI/180;
+    camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
+    camera.updateProjectionMatrix();
+    renderer.render(scene,camera);
+  } else {
+    // Seamless cylindrical panorama: render scene to cubemap, then resample.
+    _panoCubeCam.position.copy(camera.position);
+    _panoCubeCam.update(renderer, scene);
+    _panoMat.uniforms.yaw.value = camera.rotation.y;
+    _panoMat.uniforms.pitch.value = camera.rotation.x;
+    _panoMat.uniforms.hfov.value = PANO_HFOV;
+    _panoMat.uniforms.vfov.value = PANO_HFOV * (H/W);
+    renderer.setViewport(0,0,W,H);
+    renderer.render(_panoScene, _panoCam);
+  }
 }
 
 onResize();
