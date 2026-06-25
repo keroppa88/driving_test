@@ -1690,6 +1690,15 @@ coordHudEl.id = 'coord-hud';
 coordHudEl.style.cssText = 'position:absolute;bottom:8px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;letter-spacing:.03em;';
 wrapper.appendChild(coordHudEl);
 
+// Black divider lines between the three view panes (at 25% and 75%).
+const paneDividers = [25, 75].map(pct=>{
+  const d=document.createElement('div');
+  d.style.cssText='position:absolute;top:0;bottom:0;width:3px;background:#000;'
+    +'pointer-events:none;z-index:12;transform:translateX(-50%);left:'+pct+'%;';
+  wrapper.appendChild(d);
+  return d;
+});
+
 function konamiInput(tok){
   konamiIdx = (tok===KONAMI[konamiIdx]) ? konamiIdx+1 : (tok===KONAMI[0] ? 1 : 0);
   if(konamiIdx===KONAMI.length){
@@ -2168,6 +2177,7 @@ function animate(){
 
   if(topView){
     // Full-screen overhead view (single pane).
+    paneDividers.forEach(d=>d.style.display='none');
     renderer.setScissorTest(false);
     const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
     renderer.setViewport(0,0,W,H);
@@ -2177,6 +2187,7 @@ function animate(){
     camera.updateProjectionMatrix();
     renderer.render(scene,camera);
   } else {
+    paneDividers.forEach(d=>d.style.display='');
     renderViews();
   }
 }
