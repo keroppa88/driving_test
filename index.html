@@ -1593,6 +1593,8 @@ let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
 // Camera look offset relative to the vehicle heading (right stick); decays back
 // to 0 (re-aligns with the heading) when the stick is released.
 let lookYaw=0, lookPitch=0;
+// Steering look-ahead: the view leads into the turn (look toward where you steer).
+let lookAhead=0, prevSteerYaw=0;
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -1689,15 +1691,6 @@ const coordHudEl = document.createElement('div');
 coordHudEl.id = 'coord-hud';
 coordHudEl.style.cssText = 'position:absolute;bottom:8px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;letter-spacing:.03em;';
 wrapper.appendChild(coordHudEl);
-
-// Black divider lines between the three view panes (at 25% and 75%).
-const paneDividers = [25, 75].map(pct=>{
-  const d=document.createElement('div');
-  d.style.cssText='position:absolute;top:0;bottom:0;width:3px;background:#000;'
-    +'pointer-events:none;z-index:12;transform:translateX(-50%);left:'+pct+'%;';
-  wrapper.appendChild(d);
-  return d;
-});
 
 function konamiInput(tok){
   konamiIdx = (tok===KONAMI[konamiIdx]) ? konamiIdx+1 : (tok===KONAMI[0] ? 1 : 0);
@@ -2096,39 +2089,15 @@ function updateMovement(dt){
   else{shakePhase=0;pitchShake*=.85;}
 
   camera.position.y=EYE_HEIGHT;
-  // Movement follows the vehicle heading (effYaw); the camera adds the look
-  // offset so you can glance around without changing where you drive.
-  camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw, 0);
+  // Steering look-ahead: lean the view toward where you're turning (turn rate),
+  // easing back to centre when going straight.
+  const turnRate=(yaw-prevSteerYaw)/Math.max(dt,1e-3); prevSteerYaw=yaw;
+  const targetLA=Math.max(-0.7, Math.min(0.7, turnRate*0.18));
+  lookAhead += (targetLA-lookAhead)*Math.min(1, dt*5);
+  // Movement follows the vehicle heading (effYaw); the camera adds the manual
+  // look offset (right stick) plus the automatic steering look-ahead.
+  camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw+lookAhead, 0);
   playerX=camera.position.x; playerZ=camera.position.z;   // remember ground position
-}
-
-// 3-pane view for a wide monitor: widths left:centre:right = 1:2:1. Centre looks
-// forward (0°); the sides look diagonally forward (±SIDE_ANGLE). Per-pane
-// horizontal FOV is proportional to width so the three views form a continuous
-// panorama (centre 80°, sides 40°). +yaw turns left, −yaw turns right.
-const SIDE_ANGLE = 60;
-const VIEW_PANES = [
-  { x0:0.00, w:0.25, yaw:+SIDE_ANGLE, hfov:40 },   // left  (diagonally forward-left)
-  { x0:0.25, w:0.50, yaw:0,           hfov:80 },   // centre (forward)
-  { x0:0.75, w:0.25, yaw:-SIDE_ANGLE, hfov:40 },   // right (diagonally forward-right)
-];
-function renderViews(){
-  const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
-  const baseYaw=camera.rotation.y, basePitch=camera.rotation.x;
-  renderer.setScissorTest(true);
-  for(const p of VIEW_PANES){
-    const px=Math.round(p.x0*W), pw=Math.max(1,Math.round(p.w*W));
-    camera.aspect=pw/H;
-    const hf=p.hfov*Math.PI/180;
-    camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
-    camera.rotation.set(basePitch, baseYaw + p.yaw*Math.PI/180, 0);
-    camera.updateProjectionMatrix();
-    renderer.setViewport(px,0,pw,H);
-    renderer.setScissor(px,0,pw,H);
-    renderer.render(scene,camera);
-  }
-  renderer.setScissorTest(false);
-  camera.rotation.set(basePitch, baseYaw, 0);   // restore
 }
 
 function animate(){
@@ -2175,21 +2144,16 @@ function animate(){
   // Vehicle position on the map plane: X = left/right (right +), Z = near/far (奥 −).
   coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Z '+camera.position.z.toFixed(1);
 
-  if(topView){
-    // Full-screen overhead view (single pane).
-    paneDividers.forEach(d=>d.style.display='none');
-    renderer.setScissorTest(false);
-    const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
-    renderer.setViewport(0,0,W,H);
-    camera.aspect=W/H;
-    const hf=HORIZONTAL_FOV_DEG*Math.PI/180;
-    camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
-    camera.updateProjectionMatrix();
-    renderer.render(scene,camera);
-  } else {
-    paneDividers.forEach(d=>d.style.display='');
-    renderViews();
-  }
+  // Single full-screen forward view (seamless). Camera orientation (including
+  // the steering look-ahead) is set in updateMovement / for the top-down view.
+  renderer.setScissorTest(false);
+  const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
+  renderer.setViewport(0,0,W,H);
+  camera.aspect=W/H;
+  const hf=HORIZONTAL_FOV_DEG*Math.PI/180;
+  camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
+  camera.updateProjectionMatrix();
+  renderer.render(scene,camera);
 }
 
 onResize();
