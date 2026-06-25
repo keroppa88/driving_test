@@ -1713,10 +1713,12 @@ wrapper.addEventListener('mousedown',e=>{
   }
 });
 window.addEventListener('mouseup',e=>{
-  if(mouseTracking && !mouseMoved){
+  if(mouseTracking && !mouseMoved && (e.button===0||e.button===2)){
     // A click (no drag) = turn signal: right button → right, left → left.
-    if(e.button===2) signalFlick(+1);
-    else if(e.button===0) signalFlick(-1);
+    // Clicking the side that's already signalling cancels it (so two clicks of
+    // the same button = engage then release); the opposite side switches.
+    const dir = e.button===2 ? +1 : -1;
+    if(signal===dir) signalCancel(); else signalSet(dir);
   }
   mouseDown=false; mouseTracking=false;
 });
