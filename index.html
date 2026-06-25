@@ -2103,15 +2103,18 @@ const _panoCubeCam = new THREE.CubeCamera(0.05, 6000, _panoCubeRT);
 const _panoScene = new THREE.Scene();
 const _panoCam = new THREE.Camera();
 const _panoMat = new THREE.ShaderMaterial({
-  uniforms:{ tCube:{value:_panoCubeRT.texture}, yaw:{value:0}, pitch:{value:0}, hfov:{value:PANO_HFOV}, vfov:{value:PANO_HFOV*0.55} },
+  uniforms:{ tCube:{value:_panoCubeRT.texture}, yaw:{value:0}, pitch:{value:0}, hfov:{value:PANO_HFOV}, vfov:{value:PANO_HFOV*0.55}, vcrop:{value:0.10} },
   depthTest:false, depthWrite:false,
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
   fragmentShader:`
     precision highp float;
-    uniform samplerCube tCube; uniform float yaw,pitch,hfov,vfov; varying vec2 vUv;
+    uniform samplerCube tCube; uniform float yaw,pitch,hfov,vfov,vcrop; varying vec2 vUv;
     void main(){
       float a=(vUv.x-0.5)*hfov;       // horizontal angle (cylinder around Y)
-      float t=tan((vUv.y-0.5)*vfov);  // vertical: rectilinear (keeps verticals straight)
+      // Drop the most-downward 'vcrop' of the vertical range (largest distortion),
+      // then fill the screen with the remainder.
+      float fy=vcrop+(1.0-vcrop)*vUv.y;
+      float t=tan((fy-0.5)*vfov);     // vertical: rectilinear (keeps verticals straight)
       vec3 d=vec3(sin(a), t, -cos(a));   // local, forward = -Z (cylinder)
       float cp=cos(pitch), sp=sin(pitch);
       d=vec3(d.x, d.y*cp - d.z*sp, d.y*sp + d.z*cp);        // pitch about X
