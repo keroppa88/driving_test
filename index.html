@@ -1681,11 +1681,11 @@ wrapper.addEventListener('touchend',()=>{
   if(!touchIsDrag){
     // Count quick taps (single taps are ignored — they happen while steering).
     // Double-tap = turn signal (right half → right, left half → left).
-    // Triple-tap = cancel the signal / return the view to normal.
+    // Triple-tap = toggle fullscreen.
     tapX=touchLastX; tapCount++;
     clearTimeout(tapTimer);
     tapTimer=setTimeout(()=>{
-      if(tapCount>=3){ signalCancel(); }
+      if(tapCount>=3){ toggleFullscreen(); }
       else if(tapCount===2){
         const half=wrapper.clientWidth/2;
         signalSet(tapX>=half ? +1 : -1);
