@@ -539,7 +539,7 @@ const skyMat = new THREE.ShaderMaterial({
       vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.85)),1.0); }`,
   side: THREE.BackSide, depthWrite: false, depthTest: false,
 });
-const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(9000,32,15), skyMat);
 skyMesh.renderOrder = -1; skyMesh.frustumCulled = false;
 scene.add(skyMesh);
 
@@ -618,7 +618,7 @@ setSkyFromColor('#9bbae8');
 // ─────────────────────────────────────────────
 //  CAMERA
 // ─────────────────────────────────────────────
-const camera = new THREE.PerspectiveCamera(70, 1, 0.01, 1000);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.01, 30000);
 camera.rotation.order = 'YXZ';
 camera.position.set(0, EYE_HEIGHT, -5);
 
@@ -788,7 +788,7 @@ let cloudDrift  = 0;       // accumulated left-right drift
     uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
     side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: true, fog: false,
   });
-  const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(700,48,24), cloudMat);
+  const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(6500,48,24), cloudMat);
   cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
   scene.add(cloudDome);
   window._updateClouds = function(dt){
@@ -853,10 +853,12 @@ function buildMountainRings() {
   }
   // grey: base grey tone of the layer. tint: how strongly the horizon colour
   // is mixed in (farther rings haze toward the horizon more).
+  // Radii are pushed well outside the map (half-extent ~1000, diagonal ~1414)
+  // so the distant mountains ring the map instead of sitting inside it.
   const layers=[
-    {r:150,h:90,cy:15,grey:0x6f6f72,tint:0.35,seed:1.2,rs:37/90},
-    {r:260,h:95,cy:17,grey:0x7c7c80,tint:0.5, seed:2.7,rs:43/95},
-    {r:400,h:100,cy:20,grey:0x8c8c90,tint:0.65,seed:4.1,rs:53/100},
+    {r:2000,h:540,cy:90, grey:0x6f6f72,tint:0.35,seed:1.2,rs:37/90},
+    {r:2900,h:570,cy:100,grey:0x7c7c80,tint:0.5, seed:2.7,rs:43/95},
+    {r:3900,h:600,cy:120,grey:0x8c8c90,tint:0.65,seed:4.1,rs:53/100},
   ];
   return layers.map(L=>{
     const m=new THREE.Mesh(new THREE.CylinderGeometry(L.r,L.r,L.h,64,1,true),
