@@ -2083,7 +2083,7 @@ function updateMovement(dt){
   // Rock shake
   const now2=performance.now(), dt2=Math.min((now2-shakeT0)/1000,.05); shakeT0=now2;
   const onRocks=Math.abs(camera.position.x)>2.1, kmh=cruiseSpeed/MAX_CRUISE*120;
-  if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.625*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
+  if(onRocks&&kmh>=80){shakePhase=(shakePhase+dt2*18)%2;pitchShake=-(0.3125*Math.PI/180)*(1-Math.cos(Math.PI*shakePhase))/2;}
   else{shakePhase=0;pitchShake*=.85;}
 
   camera.position.y=EYE_HEIGHT;
