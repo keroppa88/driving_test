@@ -1500,48 +1500,6 @@ const USE_NIHONBASHI = true;
 const NIHON_SIZE = 2000;                 // world size of the map's larger horizontal extent
 let mapViewCX = COURSE_CENTER_X, mapViewCZ = COURSE_CENTER_Z, mapViewH = TOPVIEW_HEIGHT;
 
-// Collision for the single map: bake an occupancy grid at load. Any triangle
-// with a vertex above the ground threshold marks its XZ footprint as blocked,
-// so "anything above y=0" is solid. Deterministic (no per-frame raycast).
-let COLLIDE_Y_THRESH = 1.0;     // height above ground that counts as a wall
-let occ = null;                 // { grid, N, minX, minZ, w, d }
-function bakeOccupancy(group){
-  group.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(group);
-  const minX=box.min.x, minZ=box.min.z;
-  const w=Math.max(1e-6, box.max.x-minX), d=Math.max(1e-6, box.max.z-minZ);
-  const N=1024, grid=new Uint8Array(N*N);
-  const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3();
-  group.traverse(o=>{
-    if(!o.isMesh||!o.geometry) return;
-    const pos=o.geometry.attributes.position; if(!pos) return;
-    const idx=o.geometry.index, mw=o.matrixWorld;
-    const n=idx?idx.count:pos.count;
-    for(let i=0;i<n;i+=3){
-      const i0=idx?idx.getX(i):i, i1=idx?idx.getX(i+1):i+1, i2=idx?idx.getX(i+2):i+2;
-      a.fromBufferAttribute(pos,i0).applyMatrix4(mw);
-      b.fromBufferAttribute(pos,i1).applyMatrix4(mw);
-      c.fromBufferAttribute(pos,i2).applyMatrix4(mw);
-      if(a.y<=COLLIDE_Y_THRESH && b.y<=COLLIDE_Y_THRESH && c.y<=COLLIDE_Y_THRESH) continue;
-      let x0=Math.min(a.x,b.x,c.x), x1=Math.max(a.x,b.x,c.x);
-      let z0=Math.min(a.z,b.z,c.z), z1=Math.max(a.z,b.z,c.z);
-      let cx0=Math.floor((x0-minX)/w*N), cx1=Math.floor((x1-minX)/w*N);
-      let cz0=Math.floor((z0-minZ)/d*N), cz1=Math.floor((z1-minZ)/d*N);
-      cx0=Math.max(0,cx0); cz0=Math.max(0,cz0); cx1=Math.min(N-1,cx1); cz1=Math.min(N-1,cz1);
-      for(let cz=cz0;cz<=cz1;cz++) for(let cx=cx0;cx<=cx1;cx++) grid[cz*N+cx]=1;
-    }
-  });
-  return { grid, N, minX, minZ, w, d };
-}
-function moveBlocked(x,z,dx,dz){
-  if(!occ) return false;
-  const tx=x+dx, tz=z+dz;
-  const cx=Math.floor((tx-occ.minX)/occ.w*occ.N);
-  const cz=Math.floor((tz-occ.minZ)/occ.d*occ.N);
-  if(cx<0||cx>=occ.N||cz<0||cz>=occ.N) return false;   // off the map → allow
-  return occ.grid[cz*occ.N+cx]===1;
-}
-
 function buildNihonbashi(){
   new GLTFLoader().load('nihonbashi.gltf?v='+Date.now(), g=>{
     const m=g.scene;
@@ -1559,8 +1517,6 @@ function buildNihonbashi(){
     flat.position.x-=cen.x; flat.position.z-=cen.z;  // centre XZ; keep source y=0 at world y=0
     // Eye height scaled to the (large) map. Source y=0 is the ground.
     EYE_HEIGHT = s * 375;                    // viewpoint height (quartered from initial)
-    COLLIDE_Y_THRESH = s * 300;             // ~0.3 m above ground counts as a wall
-    occ = bakeOccupancy(flat);               // bake building footprints once
     mapViewCX=0; mapViewCZ=0; mapViewH=NIHON_SIZE*0.7;
     camera.position.set(-415,EYE_HEIGHT,-263); playerX=-415; playerZ=-263;
     loadingEl.style.display='none'; startOverlay.style.display='flex'; loadProgEl.textContent='';
@@ -2108,11 +2064,8 @@ function updateMovement(dt){
       dz = _fVec.z*cruiseSpeed*dt;
     }
     if(USE_NIHONBASHI){
-      // Single large map: block anything above the ground (y>0); slide on walls.
-      const cx0=camera.position.x, cz0=camera.position.z;
-      if(!moveBlocked(cx0,cz0,dx,dz)){ camera.position.x+=dx; camera.position.z+=dz; }
-      else if(!moveBlocked(cx0,cz0,dx,0)){ camera.position.x+=dx; }
-      else if(!moveBlocked(cx0,cz0,0,dz)){ camera.position.z+=dz; }
+      // Single large map: free movement (no collision).
+      camera.position.x+=dx; camera.position.z+=dz;
     } else {
       // Toroidal wrap (top/bottom and left/right edges loop) then restrict to
       // walkable areas. Try the full move, then each axis alone (slide along walls).
@@ -2138,6 +2091,35 @@ function updateMovement(dt){
   // offset so you can glance around without changing where you drive.
   camera.rotation.set(pitch+lookPitch+pitchShake, effYaw+lookYaw, 0);
   playerX=camera.position.x; playerZ=camera.position.z;   // remember ground position
+}
+
+// 3-pane view for a wide monitor: widths left:centre:right = 1:2:1. Centre looks
+// forward (0°); the sides look diagonally forward (±SIDE_ANGLE). Per-pane
+// horizontal FOV is proportional to width so the three views form a continuous
+// panorama (centre 80°, sides 40°). +yaw turns left, −yaw turns right.
+const SIDE_ANGLE = 60;
+const VIEW_PANES = [
+  { x0:0.00, w:0.25, yaw:+SIDE_ANGLE, hfov:40 },   // left  (diagonally forward-left)
+  { x0:0.25, w:0.50, yaw:0,           hfov:80 },   // centre (forward)
+  { x0:0.75, w:0.25, yaw:-SIDE_ANGLE, hfov:40 },   // right (diagonally forward-right)
+];
+function renderViews(){
+  const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
+  const baseYaw=camera.rotation.y, basePitch=camera.rotation.x;
+  renderer.setScissorTest(true);
+  for(const p of VIEW_PANES){
+    const px=Math.round(p.x0*W), pw=Math.max(1,Math.round(p.w*W));
+    camera.aspect=pw/H;
+    const hf=p.hfov*Math.PI/180;
+    camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
+    camera.rotation.set(basePitch, baseYaw + p.yaw*Math.PI/180, 0);
+    camera.updateProjectionMatrix();
+    renderer.setViewport(px,0,pw,H);
+    renderer.setScissor(px,0,pw,H);
+    renderer.render(scene,camera);
+  }
+  renderer.setScissorTest(false);
+  camera.rotation.set(basePitch, baseYaw, 0);   // restore
 }
 
 function animate(){
@@ -2184,7 +2166,19 @@ function animate(){
   // Vehicle position on the map plane: X = left/right (right +), Z = near/far (奥 −).
   coordHudEl.textContent='X '+camera.position.x.toFixed(1)+'　Z '+camera.position.z.toFixed(1);
 
-  renderer.render(scene,camera);
+  if(topView){
+    // Full-screen overhead view (single pane).
+    renderer.setScissorTest(false);
+    const W=wrapper.clientWidth, H=Math.max(1,wrapper.clientHeight);
+    renderer.setViewport(0,0,W,H);
+    camera.aspect=W/H;
+    const hf=HORIZONTAL_FOV_DEG*Math.PI/180;
+    camera.fov=2*Math.atan(Math.tan(hf/2)/camera.aspect)*180/Math.PI;
+    camera.updateProjectionMatrix();
+    renderer.render(scene,camera);
+  } else {
+    renderViews();
+  }
 }
 
 onResize();
