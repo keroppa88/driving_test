@@ -2110,9 +2110,9 @@ const _panoMat = new THREE.ShaderMaterial({
     precision highp float;
     uniform samplerCube tCube; uniform float yaw,pitch,hfov,vfov; varying vec2 vUv;
     void main(){
-      float a=(vUv.x-0.5)*hfov;       // horizontal angle (cylindrical)
-      float b=(vUv.y-0.5)*vfov;       // vertical angle
-      vec3 d=vec3(sin(a)*cos(b), sin(b), -cos(a)*cos(b));   // local, forward = -Z
+      float a=(vUv.x-0.5)*hfov;       // horizontal angle (cylinder around Y)
+      float t=tan((vUv.y-0.5)*vfov);  // vertical: rectilinear (keeps verticals straight)
+      vec3 d=vec3(sin(a), t, -cos(a));   // local, forward = -Z (cylinder)
       float cp=cos(pitch), sp=sin(pitch);
       d=vec3(d.x, d.y*cp - d.z*sp, d.y*sp + d.z*cp);        // pitch about X
       float cy=cos(yaw), sy=sin(yaw);
