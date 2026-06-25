@@ -2097,7 +2097,7 @@ function updateMovement(dt){
 // Render the scene into a cubemap each frame, then resample it cylindrically to
 // a full-screen quad: horizontal = linear angle (no seams / no rectilinear
 // edge-stretch), so it wraps naturally across a curved/triple screen.
-let PANO_HFOV = 160 * Math.PI/180;          // horizontal field of view (tunable)
+let PANO_HFOV = 120 * Math.PI/180;          // horizontal field of view (tunable)
 const _panoCubeRT = new THREE.WebGLCubeRenderTarget(1024, { minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter });
 const _panoCubeCam = new THREE.CubeCamera(0.05, 6000, _panoCubeRT);
 const _panoScene = new THREE.Scene();
