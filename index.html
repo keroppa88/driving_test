@@ -1688,7 +1688,9 @@ wrapper.addEventListener('touchend',()=>{
       if(tapCount>=3){ toggleFullscreen(); }
       else if(tapCount===2){
         const half=wrapper.clientWidth/2;
-        signalSet(tapX>=half ? +1 : -1);
+        const dir = tapX>=half ? +1 : -1;
+        // Double-tap the side that's already signalling → cancel; otherwise engage.
+        if(signal===dir) signalCancel(); else signalSet(dir);
       }
       tapCount=0;
     }, 320);
