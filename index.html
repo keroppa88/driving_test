@@ -1606,6 +1606,12 @@ function signalFlick(dir){
     signalLockYaw = yaw - dir*SIGNAL_ANGLE;
   }
 }
+// Engage the signal for a given side (switches direction if the other side is
+// already on). Used by the touch double-tap.
+function signalSet(dir){
+  if(signal!==dir){ signal=dir; signalLockYaw = yaw - dir*SIGNAL_ANGLE; }
+}
+function signalCancel(){ signal=0; }   // return the view to the vehicle heading
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -1655,6 +1661,7 @@ skyBrightSlider.addEventListener('input', e => {
 });
 
 let touchIsDrag=false, lastTapTime=0;
+let tapCount=0, tapTimer=null, tapX=0;
 const DRAG_THRESHOLD=8;
 wrapper.addEventListener('touchstart',e=>{
   if(e.target.closest('#start-overlay,#sound-panel,#loading-screen'))return;
@@ -1672,13 +1679,19 @@ wrapper.addEventListener('touchmove',e=>{
 wrapper.addEventListener('touchend',()=>{
   lastTouchTime=Date.now();   // suppress the synthesized mouse events that follow
   if(!touchIsDrag){
-    // Single tap = turn signal: right half of the screen → right winker,
-    // left half → left winker. (Double-tap still toggles fullscreen.)
-    const half=wrapper.clientWidth/2;
-    if(touchLastX>=half) signalFlick(+1); else signalFlick(-1);
-    const now=Date.now();
-    if(now-lastTapTime<400){ toggleFullscreen(); lastTapTime=0; }
-    else lastTapTime=now;
+    // Count quick taps (single taps are ignored — they happen while steering).
+    // Double-tap = turn signal (right half → right, left half → left).
+    // Triple-tap = cancel the signal / return the view to normal.
+    tapX=touchLastX; tapCount++;
+    clearTimeout(tapTimer);
+    tapTimer=setTimeout(()=>{
+      if(tapCount>=3){ signalCancel(); }
+      else if(tapCount===2){
+        const half=wrapper.clientWidth/2;
+        signalSet(tapX>=half ? +1 : -1);
+      }
+      tapCount=0;
+    }, 320);
   }
   touchActive=false; touchIsDrag=false;
 });
