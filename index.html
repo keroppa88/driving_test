@@ -2220,14 +2220,15 @@ function animate(){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
-    const spacing=EYE_HEIGHT*0.22, throwD=EYE_HEIGHT*6;
+    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*6, spread=EYE_HEIGHT*1.8;
     const lit=9*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
       lt.position.y=EYE_HEIGHT*0.75;
-      // Aim at the ground ahead → cone covers the road in front and below.
-      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*spacing);
+      // Aim at the ground ahead, fanned out to the side so the two beams form
+      // separate left/right pools instead of merging into one central spot.
+      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*spread);
       lt.target.position.y=0; lt.target.updateMatrixWorld();
     }
   } else {
