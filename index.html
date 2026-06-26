@@ -632,6 +632,16 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(50, 100, 50);
 scene.add(sun);
 
+// Headlights: two forward-facing spot lights that switch on when it gets dark.
+function makeHeadlight(){
+  const s = new THREE.SpotLight(0xfff0cc, 0, 0, 0.5, 0.7, 0); // warm, soft edge, decay 0
+  s.visible = false;
+  scene.add(s); scene.add(s.target);
+  return s;
+}
+const headL = makeHeadlight(), headR = makeHeadlight();
+const _hFwd = new THREE.Vector3(), _hRt = new THREE.Vector3(), _hEul = new THREE.Euler(0,0,0,'YXZ');
+
 // ─────────────────────────────────────────────
 //  GROUND
 // ─────────────────────────────────────────────
@@ -2203,6 +2213,26 @@ function animate(){
   const k=Math.max(0.06,Math.min(1,b/0.40));
   ambient.intensity=AMBIENT_BASE*k;
   sun.intensity=SUN_BASE*k;
+
+  // Headlights: fade in as it gets dark (k below ~0.45), aiming forward & down.
+  const headOn=Math.max(0,Math.min(1,(0.45-k)/0.35));
+  if(headOn>0 && !topView){
+    const eff=getEffectiveYaw();
+    _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
+    _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
+    const spacing=EYE_HEIGHT*0.22, throwD=EYE_HEIGHT*6;
+    const lit=9*headOn;
+    for(const [lt,sgn] of [[headL,-1],[headR,1]]){
+      lt.visible=true; lt.intensity=lit;
+      lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
+      lt.position.y=EYE_HEIGHT*0.75;
+      // Aim at the ground ahead → cone covers the road in front and below.
+      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*spacing);
+      lt.target.position.y=0; lt.target.updateMatrixWorld();
+    }
+  } else {
+    headL.visible=headR.visible=false;
+  }
 
   if(colorHudOn){
     // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
