@@ -625,7 +625,9 @@ camera.position.set(0, EYE_HEIGHT, -5);
 // ─────────────────────────────────────────────
 //  LIGHTING
 // ─────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+scene.add(ambient);
+const AMBIENT_BASE = 1.5, SUN_BASE = 1.0;
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(50, 100, 50);
 scene.add(sun);
@@ -2190,6 +2192,17 @@ function animate(){
   skyUniforms.horizonBandColor.value.lerp(skyHorizBandTarget,sp);
   scene.fog.color.lerp(GROUND_FOG_COLOR,sp);
   skyMesh.position.copy(camera.position);
+
+  // Darken the ground (lit map) as the sky/horizon brightness drops toward 0.
+  // Brightness = luminance of the current sky top & horizon colours; at the
+  // default daytime sky this is ~0.72, so normalise against that for k≈1.
+  const _lum=c=>0.2126*c.r+0.7152*c.g+0.0722*c.b;
+  const b=Math.max(_lum(skyUniforms.topColor.value),_lum(skyUniforms.horizonColor.value));
+  // Normal daytime skies (b≳0.4) keep full ground lighting (k=1); the ground
+  // only darkens as the sky/horizon brightness ramps down toward 0.
+  const k=Math.max(0.06,Math.min(1,b/0.40));
+  ambient.intensity=AMBIENT_BASE*k;
+  sun.intensity=SUN_BASE*k;
 
   if(colorHudOn){
     // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
